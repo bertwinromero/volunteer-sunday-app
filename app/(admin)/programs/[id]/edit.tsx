@@ -1,0 +1,864 @@
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { TextInput, Button, Text, HelperText, IconButton, Divider, Switch, Chip } from 'react-native-paper';
+import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { databaseService } from '../../../../services/database';
+import { ProgramItemInsert, ProgramItemUpdate, RecurrencePattern, ProgramWithItems, ProgramItem } from '../../../../types';
+
+interface ProgramItemForm {
+  id: string;
+  time: string;
+  title: string;
+  description: string;
+  duration_minutes: string;
+  isNew?: boolean; // Track if this is a newly added item
+  isDeleted?: boolean; // Track if this item should be deleted
+  originalId?: string; // Store original DB id for existing items
+}
+
+export default function EditProgramScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+  const { user } = useAuth();
+
+  // Program details
+  const [title, setTitle] = useState('');
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [startTime, setStartTime] = useState<{ hours: number; minutes: number } | undefined>(undefined);
+  const [endTime, setEndTime] = useState<{ hours: number; minutes: number } | undefined>(undefined);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
+  // Recurring program fields
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern>('weekly');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
+  const [showRecurrenceEndDatePicker, setShowRecurrenceEndDatePicker] = useState(false);
+
+  const [items, setItems] = useState<ProgramItemForm[]>([]);
+
+  // Item time picker state
+  const [showItemTimePicker, setShowItemTimePicker] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadProgram();
+  }, [id]);
+
+  const loadProgram = async () => {
+    try {
+      setLoading(true);
+      const program: ProgramWithItems = await databaseService.getProgram(id);
+
+      // Set program details
+      setTitle(program.title);
+      setDate(new Date(program.date));
+
+      // Set times if they exist
+      if (program.start_time) {
+        const [hours, minutes] = program.start_time.split(':').map(Number);
+        setStartTime({ hours, minutes });
+      }
+      if (program.end_time) {
+        const [hours, minutes] = program.end_time.split(':').map(Number);
+        setEndTime({ hours, minutes });
+      }
+
+      // Set recurring fields
+      setIsRecurring(program.is_recurring);
+      if (program.recurrence_pattern) {
+        setRecurrencePattern(program.recurrence_pattern as RecurrencePattern);
+      }
+      if (program.recurrence_end_date) {
+        setRecurrenceEndDate(new Date(program.recurrence_end_date));
+      }
+
+      // Set program items
+      const sortedItems = program.program_items.sort((a, b) => a.order - b.order);
+      const formItems: ProgramItemForm[] = sortedItems.map((item: ProgramItem) => ({
+        id: item.id,
+        time: item.time,
+        title: item.title,
+        description: item.description || '',
+        duration_minutes: item.duration_minutes.toString(),
+        isNew: false,
+        isDeleted: false,
+        originalId: item.id,
+      }));
+
+      setItems(formItems.length > 0 ? formItems : [
+        { id: 'new-1', time: '', title: '', description: '', duration_minutes: '', isNew: true },
+      ]);
+    } catch (err: any) {
+      console.error('Error loading program:', err);
+      setError(err.message || 'Failed to load program');
+      Alert.alert('Error', 'Failed to load program. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addItem = () => {
+    const newId = `new-${Date.now()}`;
+
+    // Calculate next item's start time based on last item's end time
+    let newItemTime = '';
+    const lastItem = items[items.length - 1];
+    if (lastItem && lastItem.time && lastItem.duration_minutes && !lastItem.isDeleted) {
+      const [hours, minutes] = lastItem.time.split(':').map(Number);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        const durationMins = parseInt(lastItem.duration_minutes);
+        if (!isNaN(durationMins) && durationMins > 0) {
+          let totalMinutes = hours * 60 + minutes + durationMins;
+
+          // Handle day overflow
+          if (totalMinutes >= 24 * 60) {
+            totalMinutes = totalMinutes % (24 * 60);
+          }
+
+          const newHours = Math.floor(totalMinutes / 60);
+          const newMinutes = totalMinutes % 60;
+          newItemTime = formatTime({ hours: newHours, minutes: newMinutes });
+        }
+      }
+    }
+
+    setItems([
+      ...items,
+      {
+        id: newId,
+        time: newItemTime,
+        title: '',
+        description: '',
+        duration_minutes: '',
+        isNew: true,
+      },
+    ]);
+  };
+
+  const removeItem = (id: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    // If it's a new item, just remove it from the list
+    if (item.isNew) {
+      setItems(items.filter(item => item.id !== id));
+    } else {
+      // Mark existing item as deleted
+      setItems(items.map(item =>
+        item.id === id ? { ...item, isDeleted: true } : item
+      ));
+    }
+  };
+
+  const updateItem = (id: string, field: keyof ProgramItemForm, value: string) => {
+    setItems(items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const openItemTimePicker = (itemId: string) => {
+    setSelectedItemId(itemId);
+    setShowItemTimePicker(true);
+  };
+
+  const handleItemTimeConfirm = (params: { hours: number; minutes: number }) => {
+    if (selectedItemId) {
+      const timeString = formatTime(params);
+      updateItem(selectedItemId, 'time', timeString);
+    }
+    setShowItemTimePicker(false);
+    setSelectedItemId(null);
+  };
+
+  const getItemTime = (itemId: string): { hours: number; minutes: number } | undefined => {
+    const item = items.find(i => i.id === itemId);
+    if (!item?.time) return undefined;
+
+    const [hours, minutes] = item.time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return undefined;
+
+    return { hours, minutes };
+  };
+
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTime = (time: { hours: number; minutes: number }): string => {
+    const hours = String(time.hours).padStart(2, '0');
+    const minutes = String(time.minutes).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const formatTimeDisplay = (time: { hours: number; minutes: number }): string => {
+    const hours = time.hours % 12 || 12;
+    const minutes = String(time.minutes).padStart(2, '0');
+    const period = time.hours >= 12 ? 'PM' : 'AM';
+    return `${hours}:${minutes} ${period}`;
+  };
+
+  const calculateDuration = (): string | null => {
+    if (!startTime || !endTime) return null;
+
+    const startMinutes = startTime.hours * 60 + startTime.minutes;
+    let endMinutes = endTime.hours * 60 + endTime.minutes;
+
+    // If end time is before start time, assume it's the next day
+    if (endMinutes <= startMinutes) {
+      endMinutes += 24 * 60;
+    }
+
+    const durationMinutes = endMinutes - startMinutes;
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+
+    if (hours === 0) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else if (minutes === 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    } else {
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const validateForm = (): boolean => {
+    if (!title.trim()) {
+      setError('Please enter a program title');
+      return false;
+    }
+
+    if (!date) {
+      setError('Please select a program date');
+      return false;
+    }
+
+    // Get only non-deleted items for validation
+    const activeItems = items.filter(item => !item.isDeleted);
+
+    if (activeItems.length === 0) {
+      setError('Please add at least one program item');
+      return false;
+    }
+
+    // Validate items
+    for (let i = 0; i < activeItems.length; i++) {
+      const item = activeItems[i];
+
+      if (!item.title.trim()) {
+        setError(`Item ${i + 1}: Please enter a title`);
+        return false;
+      }
+
+      if (!item.time) {
+        setError(`Item ${i + 1}: Please select a time`);
+        return false;
+      }
+
+      if (!item.duration_minutes || parseInt(item.duration_minutes) <= 0) {
+        setError(`Item ${i + 1}: Please enter a valid duration in minutes`);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleUpdate = async () => {
+    if (!validateForm()) return;
+
+    if (!user) {
+      setError('You must be logged in to update a program');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      // Get day of week from date (0 = Sunday, 6 = Saturday)
+      const dayOfWeek = date!.getDay();
+
+      // Update program
+      await databaseService.updateProgram(id, {
+        title: title.trim(),
+        date: formatDate(date!),
+        start_time: startTime ? formatTime(startTime) : null,
+        end_time: endTime ? formatTime(endTime) : null,
+        is_recurring: isRecurring,
+        recurrence_pattern: isRecurring ? recurrencePattern : null,
+        recurrence_end_date: isRecurring && recurrenceEndDate ? formatDate(recurrenceEndDate) : null,
+        recurrence_day_of_week: isRecurring ? dayOfWeek : null,
+      });
+
+      // Handle program items changes
+      const activeItems = items.filter(item => !item.isDeleted);
+      const deletedItems = items.filter(item => item.isDeleted && !item.isNew);
+
+      // Delete removed items
+      for (const item of deletedItems) {
+        if (item.originalId) {
+          await databaseService.deleteProgramItem(item.originalId);
+        }
+      }
+
+      // Sort active items by time
+      const sortedItems = activeItems.sort((a, b) => a.time.localeCompare(b.time));
+
+      // Update existing items and create new ones
+      for (let i = 0; i < sortedItems.length; i++) {
+        const item = sortedItems[i];
+
+        if (item.isNew) {
+          // Create new item
+          const programItem: ProgramItemInsert = {
+            program_id: id,
+            time: item.time,
+            title: item.title.trim(),
+            description: item.description.trim() || null,
+            duration_minutes: parseInt(item.duration_minutes),
+            order: i,
+          };
+          await databaseService.createProgramItem(programItem);
+        } else {
+          // Update existing item
+          const updates: ProgramItemUpdate = {
+            time: item.time,
+            title: item.title.trim(),
+            description: item.description.trim() || null,
+            duration_minutes: parseInt(item.duration_minutes),
+            order: i,
+          };
+          await databaseService.updateProgramItem(item.originalId!, updates);
+        }
+      }
+
+      Alert.alert(
+        'Success',
+        'Program updated successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (err: any) {
+      console.error('Error updating program:', err);
+      setError(err.message || 'Failed to update program');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text>Loading program...</Text>
+      </View>
+    );
+  }
+
+  // Filter out deleted items for display
+  const visibleItems = items.filter(item => !item.isDeleted);
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <Text variant="headlineMedium" style={styles.title}>
+          Edit Program
+        </Text>
+        <Text variant="bodyMedium" style={styles.subtitle}>
+          Update program details and schedule
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Program Details
+        </Text>
+
+        <TextInput
+          label="Program Title *"
+          value={title}
+          onChangeText={setTitle}
+          mode="outlined"
+          style={styles.input}
+          placeholder="e.g., Sunday Morning Service"
+          disabled={saving}
+        />
+
+        <View style={styles.datePickerContainer}>
+          <Text variant="labelLarge" style={styles.dateLabel}>
+            Date *
+          </Text>
+          <Button
+            mode="outlined"
+            onPress={() => setShowDatePicker(true)}
+            icon="calendar"
+            style={styles.dateButton}
+            contentStyle={styles.dateButtonContent}
+            disabled={saving}
+          >
+            {date ? formatDate(date) : 'Select Date'}
+          </Button>
+        </View>
+
+        <View style={styles.timeContainer}>
+          <View style={styles.timeField}>
+            <Text variant="labelLarge" style={styles.dateLabel}>
+              Start Time (Optional)
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={() => setShowStartTimePicker(true)}
+              icon="clock-outline"
+              style={styles.dateButton}
+              contentStyle={styles.dateButtonContent}
+              disabled={saving}
+            >
+              {startTime ? formatTimeDisplay(startTime) : 'Select Start Time'}
+            </Button>
+          </View>
+
+          <View style={styles.timeField}>
+            <Text variant="labelLarge" style={styles.dateLabel}>
+              End Time (Optional)
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={() => setShowEndTimePicker(true)}
+              icon="clock-outline"
+              style={styles.dateButton}
+              contentStyle={styles.dateButtonContent}
+              disabled={saving}
+            >
+              {endTime ? formatTimeDisplay(endTime) : 'Select End Time'}
+            </Button>
+          </View>
+        </View>
+
+        {/* Duration Display */}
+        {calculateDuration() && (
+          <View style={styles.durationContainer}>
+            <IconButton icon="timelapse" size={20} style={styles.durationIcon} />
+            <View style={styles.durationContent}>
+              <Text variant="labelSmall" style={styles.durationLabel}>
+                Program Duration
+              </Text>
+              <Text variant="titleMedium" style={styles.durationValue}>
+                {calculateDuration()}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Recurring Program Section */}
+        <View style={styles.recurringContainer}>
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabel}>
+              <Text variant="labelLarge">Make this recurring</Text>
+              <Text variant="bodySmall" style={styles.switchHint}>
+                Automatically create this program on a schedule
+              </Text>
+            </View>
+            <Switch value={isRecurring} onValueChange={setIsRecurring} />
+          </View>
+
+          {isRecurring && (
+            <View style={styles.recurringOptions}>
+              <Text variant="labelLarge" style={styles.dateLabel}>
+                Repeat Pattern
+              </Text>
+              <View style={styles.patternChips}>
+                <Chip
+                  mode={recurrencePattern === 'weekly' ? 'flat' : 'outlined'}
+                  selected={recurrencePattern === 'weekly'}
+                  onPress={() => setRecurrencePattern('weekly')}
+                  style={styles.chip}
+                >
+                  Weekly
+                </Chip>
+                <Chip
+                  mode={recurrencePattern === 'biweekly' ? 'flat' : 'outlined'}
+                  selected={recurrencePattern === 'biweekly'}
+                  onPress={() => setRecurrencePattern('biweekly')}
+                  style={styles.chip}
+                >
+                  Every 2 Weeks
+                </Chip>
+                <Chip
+                  mode={recurrencePattern === 'monthly' ? 'flat' : 'outlined'}
+                  selected={recurrencePattern === 'monthly'}
+                  onPress={() => setRecurrencePattern('monthly')}
+                  style={styles.chip}
+                >
+                  Monthly
+                </Chip>
+              </View>
+
+              <View style={styles.datePickerContainer}>
+                <Text variant="labelLarge" style={styles.dateLabel}>
+                  End Date (Optional)
+                </Text>
+                <Button
+                  mode="outlined"
+                  onPress={() => setShowRecurrenceEndDatePicker(true)}
+                  icon="calendar"
+                  style={styles.dateButton}
+                  contentStyle={styles.dateButtonContent}
+                  disabled={saving}
+                >
+                  {recurrenceEndDate ? formatDate(recurrenceEndDate) : 'No End Date'}
+                </Button>
+              </View>
+
+              <HelperText type="info">
+                {recurrencePattern === 'weekly' && 'Program will repeat every week on the same day'}
+                {recurrencePattern === 'biweekly' && 'Program will repeat every 2 weeks on the same day'}
+                {recurrencePattern === 'monthly' && 'Program will repeat monthly on the same day'}
+              </HelperText>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <Divider style={styles.divider} />
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Program Items
+          </Text>
+          <Button
+            mode="outlined"
+            onPress={addItem}
+            icon="plus"
+            compact
+            disabled={saving}
+          >
+            Add Item
+          </Button>
+        </View>
+
+        {visibleItems.map((item, index) => (
+          <View key={item.id} style={styles.itemCard}>
+            <View style={styles.itemHeader}>
+              <Text variant="labelLarge">Item {index + 1}</Text>
+              {visibleItems.length > 1 && (
+                <IconButton
+                  icon="close"
+                  size={20}
+                  onPress={() => removeItem(item.id)}
+                  disabled={saving}
+                />
+              )}
+            </View>
+
+            <View style={styles.datePickerContainer}>
+              <Text variant="labelLarge" style={styles.dateLabel}>
+                Time *
+              </Text>
+              <Button
+                mode="outlined"
+                onPress={() => openItemTimePicker(item.id)}
+                icon="clock-outline"
+                style={styles.dateButton}
+                contentStyle={styles.dateButtonContent}
+                disabled={saving}
+              >
+                {item.time ? (
+                  (() => {
+                    const timeObj = getItemTime(item.id);
+                    return timeObj ? formatTimeDisplay(timeObj) : item.time;
+                  })()
+                ) : 'Select Time'}
+              </Button>
+            </View>
+
+            <TextInput
+              label="Title *"
+              value={item.title}
+              onChangeText={(value) => updateItem(item.id, 'title', value)}
+              mode="outlined"
+              style={styles.input}
+              placeholder="e.g., Praise and Worship"
+              disabled={saving}
+            />
+
+            <TextInput
+              label="Description (Optional)"
+              value={item.description}
+              onChangeText={(value) => updateItem(item.id, 'description', value)}
+              mode="outlined"
+              style={styles.input}
+              placeholder="Additional details..."
+              multiline
+              numberOfLines={2}
+              disabled={saving}
+            />
+
+            <TextInput
+              label="Duration (minutes) *"
+              value={item.duration_minutes}
+              onChangeText={(value) => updateItem(item.id, 'duration_minutes', value)}
+              mode="outlined"
+              style={styles.input}
+              placeholder="30"
+              keyboardType="number-pad"
+              disabled={saving}
+            />
+          </View>
+        ))}
+      </View>
+
+      {error ? (
+        <HelperText type="error" visible={!!error} style={styles.error}>
+          {error}
+        </HelperText>
+      ) : null}
+
+      <View style={styles.actions}>
+        <Button
+          mode="contained"
+          onPress={handleUpdate}
+          loading={saving}
+          disabled={saving}
+          style={styles.createButton}
+          contentStyle={styles.buttonContent}
+        >
+          Update Program
+        </Button>
+
+        <Button
+          mode="text"
+          onPress={() => router.back()}
+          disabled={saving}
+        >
+          Cancel
+        </Button>
+      </View>
+
+      <DatePickerModal
+        locale="en"
+        mode="single"
+        visible={showDatePicker}
+        onDismiss={() => setShowDatePicker(false)}
+        date={date}
+        onConfirm={(params) => {
+          setShowDatePicker(false);
+          setDate(params.date);
+        }}
+      />
+
+      <TimePickerModal
+        visible={showStartTimePicker}
+        onDismiss={() => setShowStartTimePicker(false)}
+        onConfirm={(params) => {
+          setShowStartTimePicker(false);
+          setStartTime(params);
+        }}
+        hours={startTime?.hours}
+        minutes={startTime?.minutes}
+        label="Select Start Time"
+      />
+
+      <TimePickerModal
+        visible={showEndTimePicker}
+        onDismiss={() => setShowEndTimePicker(false)}
+        onConfirm={(params) => {
+          setShowEndTimePicker(false);
+          setEndTime(params);
+        }}
+        hours={endTime?.hours}
+        minutes={endTime?.minutes}
+        label="Select End Time"
+      />
+
+      <DatePickerModal
+        locale="en"
+        mode="single"
+        visible={showRecurrenceEndDatePicker}
+        onDismiss={() => setShowRecurrenceEndDatePicker(false)}
+        date={recurrenceEndDate}
+        onConfirm={(params) => {
+          setShowRecurrenceEndDatePicker(false);
+          setRecurrenceEndDate(params.date);
+        }}
+      />
+
+      <TimePickerModal
+        visible={showItemTimePicker}
+        onDismiss={() => {
+          setShowItemTimePicker(false);
+          setSelectedItemId(null);
+        }}
+        onConfirm={handleItemTimeConfirm}
+        hours={selectedItemId ? getItemTime(selectedItemId)?.hours : undefined}
+        minutes={selectedItemId ? getItemTime(selectedItemId)?.minutes : undefined}
+        label="Select Item Time"
+      />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    opacity: 0.7,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  input: {
+    marginBottom: 12,
+  },
+  datePickerContainer: {
+    marginBottom: 12,
+  },
+  dateLabel: {
+    marginBottom: 8,
+    opacity: 0.7,
+  },
+  dateButton: {
+    justifyContent: 'flex-start',
+  },
+  dateButtonContent: {
+    justifyContent: 'flex-start',
+    paddingVertical: 8,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  timeField: {
+    flex: 1,
+  },
+  divider: {
+    marginVertical: 24,
+  },
+  itemCard: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  error: {
+    marginBottom: 16,
+  },
+  actions: {
+    marginTop: 24,
+  },
+  createButton: {
+    marginBottom: 12,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  durationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  durationIcon: {
+    margin: 0,
+    marginRight: 8,
+  },
+  durationContent: {
+    flex: 1,
+  },
+  durationLabel: {
+    opacity: 0.7,
+    marginBottom: 2,
+  },
+  durationValue: {
+    fontWeight: '600',
+    color: '#1976d2',
+  },
+  recurringContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  switchLabel: {
+    flex: 1,
+    marginRight: 16,
+  },
+  switchHint: {
+    marginTop: 4,
+    opacity: 0.6,
+  },
+  recurringOptions: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  patternChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  chip: {
+    marginRight: 8,
+    marginBottom: 8,
+  },
+});

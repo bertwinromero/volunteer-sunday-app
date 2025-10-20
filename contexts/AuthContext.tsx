@@ -71,10 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       await authService.signIn(email, password);
+      // Don't set loading to false here - let the onAuthStateChange handler do it
+      // after the profile is fetched
     } catch (error) {
+      setLoading(false); // Only set to false on error
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 

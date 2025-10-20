@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Text, FAB, Card, Chip, Surface, IconButton } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -72,6 +72,34 @@ export default function AdminDashboard() {
       draft: programs.filter(p => p.status === 'draft').length,
       completed: programs.filter(p => p.status === 'completed').length,
     };
+  };
+
+  const handleDeleteProgram = (program: Program) => {
+    Alert.alert(
+      'Delete Program',
+      `Are you sure you want to delete "${program.title}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await databaseService.deleteProgram(program.id);
+              // Remove from local state
+              setPrograms(programs.filter(p => p.id !== program.id));
+              Alert.alert('Success', 'Program deleted successfully');
+            } catch (error) {
+              console.error('Error deleting program:', error);
+              Alert.alert('Error', 'Failed to delete program. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const stats = getStats();
@@ -205,6 +233,11 @@ export default function AdminDashboard() {
 
               <Card.Actions>
                 <IconButton
+                  icon="pencil"
+                  mode="contained-tonal"
+                  onPress={() => router.push(`/(admin)/programs/${program.id}/edit`)}
+                />
+                <IconButton
                   icon="share-variant"
                   mode="contained-tonal"
                   onPress={() => router.push(`/(admin)/programs/${program.id}/share`)}
@@ -213,6 +246,13 @@ export default function AdminDashboard() {
                   icon="account-multiple"
                   mode="contained-tonal"
                   onPress={() => router.push(`/(admin)/programs/${program.id}/participants`)}
+                />
+                <View style={{ flex: 1 }} />
+                <IconButton
+                  icon="delete"
+                  mode="contained-tonal"
+                  iconColor="#d32f2f"
+                  onPress={() => handleDeleteProgram(program)}
                 />
               </Card.Actions>
             </Card>

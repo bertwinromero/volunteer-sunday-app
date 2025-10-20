@@ -66,18 +66,38 @@ export const authService = {
    * Get the current user's profile
    */
   async getCurrentProfile(): Promise<Profile | null> {
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[authService] Getting current profile...');
+    try {
+      // Add timeout to getUser call
+      const getUserPromise = supabase.auth.getUser();
+      const timeoutPromise = new Promise<{data: {user: null}, error: any}>((resolve) =>
+        setTimeout(() => {
+          console.log('[authService] getUser timed out after 10s');
+          resolve({ data: { user: null }, error: new Error('getUser timeout') });
+        }, 10000)
+      );
 
-    if (!user) return null;
+      const { data: { user }, error: userError } = await Promise.race([getUserPromise, timeoutPromise]);
+      console.log('[authService] Got user:', user ? user.id : 'None', 'Error:', userError);
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+      if (userError && userError.message !== 'getUser timeout') throw userError;
+      if (!user) return null;
 
-    if (error) throw error;
-    return data;
+      console.log('[authService] Fetching profile from database...');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      console.log('[authService] Profile fetch result:', data ? 'Found' : 'None', 'Error:', error);
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('[authService] Error in getCurrentProfile:', error);
+      throw error;
+    }
   },
 
   /**
