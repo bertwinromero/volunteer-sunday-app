@@ -41,13 +41,13 @@ export default function AdminDashboard() {
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'active':
-        return '#4caf50';
+        return '#10B981'; // Darker green for better contrast
       case 'draft':
-        return '#ff9800';
+        return '#F59E0B'; // Darker orange for better contrast
       case 'completed':
-        return '#9e9e9e';
+        return '#6B7280'; // Darker gray for better contrast
       default:
-        return '#757575';
+        return '#6B7280';
     }
   };
 
@@ -114,51 +114,58 @@ export default function AdminDashboard() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Surface style={styles.header} elevation={2}>
-        <Text variant="headlineMedium" style={styles.headerTitle}>
-          Admin Dashboard
-        </Text>
-        <Text variant="bodyMedium" style={styles.headerSubtitle}>
-          Welcome back, {user?.first_name}!
-        </Text>
-      </Surface>
-
-      {/* Stats */}
-      <Surface style={styles.statsContainer} elevation={1}>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text variant="headlineMedium" style={styles.statNumber}>
-              {stats.total}
+      {/* Header with Gradient Effect */}
+      <View style={styles.headerGradient}>
+        <View style={styles.header}>
+          <View>
+            <Text variant="displaySmall" style={styles.headerTitle}>
+              Dashboard
             </Text>
-            <Text variant="bodySmall" style={styles.statLabel}>
-              Total Programs
-            </Text>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statItem}>
-            <Text variant="headlineMedium" style={[styles.statNumber, { color: '#4caf50' }]}>
-              {stats.active}
-            </Text>
-            <Text variant="bodySmall" style={styles.statLabel}>
-              Active
-            </Text>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statItem}>
-            <Text variant="headlineMedium" style={[styles.statNumber, { color: '#ff9800' }]}>
-              {stats.draft}
-            </Text>
-            <Text variant="bodySmall" style={styles.statLabel}>
-              Drafts
+            <Text variant="bodyLarge" style={styles.headerSubtitle}>
+              Welcome back, {user?.first_name} 👋
             </Text>
           </View>
         </View>
-      </Surface>
+      </View>
+
+      {/* Stats Cards */}
+      <View style={styles.statsContainer}>
+        <Surface style={[styles.statCard, styles.statCardPrimary]} elevation={0}>
+          <View style={styles.statIconContainer}>
+            <IconButton icon="calendar-multiple" size={24} iconColor="#6366F1" style={styles.statIcon} />
+          </View>
+          <Text variant="headlineLarge" style={styles.statNumber}>
+            {stats.total}
+          </Text>
+          <Text variant="bodyMedium" style={styles.statLabel}>
+            Total Programs
+          </Text>
+        </Surface>
+
+        <Surface style={[styles.statCard, styles.statCardSuccess]} elevation={0}>
+          <View style={styles.statIconContainer}>
+            <IconButton icon="check-circle" size={24} iconColor="#10B981" style={styles.statIcon} />
+          </View>
+          <Text variant="headlineLarge" style={[styles.statNumber, { color: '#10B981' }]}>
+            {stats.active}
+          </Text>
+          <Text variant="bodyMedium" style={styles.statLabel}>
+            Active
+          </Text>
+        </Surface>
+
+        <Surface style={[styles.statCard, styles.statCardWarning]} elevation={0}>
+          <View style={styles.statIconContainer}>
+            <IconButton icon="file-document-edit" size={24} iconColor="#F59E0B" style={styles.statIcon} />
+          </View>
+          <Text variant="headlineLarge" style={[styles.statNumber, { color: '#F59E0B' }]}>
+            {stats.draft}
+          </Text>
+          <Text variant="bodyMedium" style={styles.statLabel}>
+            Drafts
+          </Text>
+        </Surface>
+      </View>
 
       {/* Programs List */}
       <ScrollView
@@ -170,10 +177,11 @@ export default function AdminDashboard() {
       >
         {programs.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text variant="titleLarge" style={styles.emptyTitle}>
+            <IconButton icon="folder-open" size={80} iconColor="#D1D5DB" />
+            <Text variant="headlineSmall" style={styles.emptyTitle}>
               No Programs Yet
             </Text>
-            <Text variant="bodyMedium" style={styles.emptyMessage}>
+            <Text variant="bodyLarge" style={styles.emptyMessage}>
               Create your first program to get started
             </Text>
           </View>
@@ -184,77 +192,86 @@ export default function AdminDashboard() {
               style={styles.programCard}
               onPress={() => router.push(`/(admin)/programs/${program.id}/share`)}
             >
-              <Card.Content>
+              <Card.Content style={styles.cardContent}>
                 <View style={styles.cardHeader}>
-                  <View style={styles.cardTitleRow}>
-                    <Text variant="titleLarge" style={styles.programTitle}>
-                      {program.title}
-                    </Text>
-                    <Chip
-                      mode="flat"
-                      style={[
-                        styles.statusChip,
-                        { backgroundColor: getStatusColor(program.status) + '20' },
-                      ]}
-                      textStyle={{ color: getStatusColor(program.status) }}
-                    >
-                      {getStatusLabel(program.status)}
-                    </Chip>
-                  </View>
+                  <Text variant="titleLarge" style={styles.programTitle}>
+                    {program.title}
+                  </Text>
+                  <Chip
+                    mode="flat"
+                    style={[
+                      styles.statusChip,
+                      { backgroundColor: getStatusColor(program.status) + '25' },
+                    ]}
+                    textStyle={{
+                      color: getStatusColor(program.status),
+                      fontWeight: '700',
+                      fontSize: 12,
+                    }}
+                  >
+                    {getStatusLabel(program.status)}
+                  </Chip>
                 </View>
 
                 <View style={styles.programMeta}>
                   <View style={styles.metaItem}>
-                    <IconButton icon="calendar" size={16} style={styles.metaIcon} />
-                    <Text variant="bodyMedium" style={styles.metaText}>
+                    <Text style={styles.metaIcon}>📅</Text>
+                    <Text variant="bodySmall" style={styles.metaText}>
                       {formatDate(program.date)}
                     </Text>
                   </View>
 
                   {program.share_code && program.public_access_enabled && (
                     <View style={styles.metaItem}>
-                      <IconButton icon="share-variant" size={16} style={styles.metaIcon} />
-                      <Text variant="bodyMedium" style={styles.metaText}>
-                        Code: {program.share_code}
+                      <Text style={styles.metaIcon}>🔗</Text>
+                      <Text variant="bodySmall" style={styles.metaText}>
+                        {program.share_code}
                       </Text>
                     </View>
                   )}
 
                   {program.active_participants_count > 0 && (
                     <View style={styles.metaItem}>
-                      <IconButton icon="account-group" size={16} style={styles.metaIcon} />
-                      <Text variant="bodyMedium" style={styles.metaText}>
-                        {program.active_participants_count} active
+                      <Text style={styles.metaIcon}>👥</Text>
+                      <Text variant="bodySmall" style={styles.metaText}>
+                        {program.active_participants_count}
                       </Text>
                     </View>
                   )}
                 </View>
               </Card.Content>
 
-              <Card.Actions>
+              <View style={styles.cardActions}>
                 <IconButton
                   icon="pencil"
-                  mode="contained-tonal"
+                  size={18}
+                  iconColor="#6366F1"
+                  style={styles.actionButton}
                   onPress={() => router.push(`/(admin)/programs/${program.id}/edit`)}
                 />
                 <IconButton
                   icon="share-variant"
-                  mode="contained-tonal"
+                  size={18}
+                  iconColor="#8B5CF6"
+                  style={styles.actionButton}
                   onPress={() => router.push(`/(admin)/programs/${program.id}/share`)}
                 />
                 <IconButton
                   icon="account-multiple"
-                  mode="contained-tonal"
+                  size={18}
+                  iconColor="#10B981"
+                  style={styles.actionButton}
                   onPress={() => router.push(`/(admin)/programs/${program.id}/participants`)}
                 />
                 <View style={{ flex: 1 }} />
                 <IconButton
                   icon="delete"
-                  mode="contained-tonal"
-                  iconColor="#d32f2f"
+                  size={18}
+                  iconColor="#EF4444"
+                  style={styles.actionButton}
                   onPress={() => handleDeleteProgram(program)}
                 />
-              </Card.Actions>
+              </View>
             </Card>
           ))
         )}
@@ -263,8 +280,9 @@ export default function AdminDashboard() {
       {/* Create Program FAB */}
       <FAB
         icon="plus"
-        label="Create Program"
+        label="New Program"
         style={styles.fab}
+        color="#FFFFFF"
         onPress={() => router.push('/(admin)/programs/create')}
       />
     </View>
@@ -274,98 +292,148 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#F9FAFB',
+  },
+  headerGradient: {
+    backgroundColor: '#6366F1',
+    paddingTop: 60,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   headerTitle: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   headerSubtitle: {
-    opacity: 0.7,
+    color: '#E0E7FF',
+    fontWeight: '500',
   },
   statsContainer: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    padding: 20,
-  },
-  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    gap: 12,
+    marginBottom: 8,
   },
-  statItem: {
-    alignItems: 'center',
+  statCard: {
     flex: 1,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  statCardPrimary: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#E0E7FF',
+  },
+  statCardSuccess: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#D1FAE5',
+  },
+  statCardWarning: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FEF3C7',
+  },
+  statIconContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  statIcon: {
+    margin: 0,
   },
   statNumber: {
-    fontWeight: 'bold',
-    color: '#2196f3',
+    fontWeight: '700',
+    color: '#6366F1',
+    marginBottom: 4,
   },
   statLabel: {
-    opacity: 0.6,
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#e0e0e0',
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '500',
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
+    paddingTop: 12,
     paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
   },
   emptyTitle: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    marginTop: 16,
     marginBottom: 8,
+    color: '#374151',
   },
   emptyMessage: {
-    opacity: 0.6,
+    color: '#6B7280',
     textAlign: 'center',
   },
   programCard: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    overflow: 'visible',
+  },
+  cardContent: {
+    paddingBottom: 4,
+    paddingTop: 12,
+    paddingLeft: 16,
+    paddingRight: 12,
   },
   cardHeader: {
-    marginBottom: 12,
-  },
-  cardTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 8,
     gap: 8,
   },
   programTitle: {
+    fontWeight: '700',
+    color: '#111827',
     flex: 1,
-    fontWeight: '600',
+    flexShrink: 1,
   },
   statusChip: {
-    height: 28,
+    height: 30,
+    borderRadius: 6,
+    flexShrink: 0,
+    marginRight: 4,
   },
   programMeta: {
-    gap: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   metaItem: {
     flexDirection: 'row',
@@ -373,15 +441,34 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaIcon: {
-    margin: 0,
+    fontSize: 14,
   },
   metaText: {
-    opacity: 0.7,
+    color: '#6B7280',
+    fontSize: 13,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    paddingLeft: 4,
+    paddingRight: 4,
+    paddingVertical: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  actionButton: {
+    margin: 0,
   },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
+    backgroundColor: '#6366F1',
+    borderRadius: 16,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

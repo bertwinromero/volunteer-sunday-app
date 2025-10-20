@@ -12,9 +12,26 @@ const theme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: '#6200ee',
-    secondary: '#03dac6',
+    primary: '#6366F1', // Modern indigo
+    primaryContainer: '#E0E7FF',
+    secondary: '#8B5CF6', // Purple accent
+    secondaryContainer: '#EDE9FE',
+    tertiary: '#EC4899', // Pink accent
+    tertiaryContainer: '#FCE7F3',
+    background: '#F9FAFB',
+    surface: '#FFFFFF',
+    surfaceVariant: '#F3F4F6',
+    error: '#EF4444',
+    errorContainer: '#FEE2E2',
+    success: '#10B981',
+    successContainer: '#D1FAE5',
+    onPrimary: '#FFFFFF',
+    onSecondary: '#FFFFFF',
+    onBackground: '#111827',
+    onSurface: '#111827',
+    outline: '#E5E7EB',
   },
+  roundness: 12,
 };
 
 function NavigationProtector() {

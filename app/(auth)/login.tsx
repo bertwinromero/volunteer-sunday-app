@@ -39,22 +39,28 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <View style={styles.backgroundGradient} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>SP</Text>
+            </View>
+          </View>
           <Text variant="headlineLarge" style={styles.title}>
-            Sunday Program
+            Welcome Back
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Volunteer Management
+            Sign in to continue
           </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={styles.formCard}>
           <TextInput
-            label="Email"
+            label="Email Address"
             value={email}
             onChangeText={setEmail}
             mode="outlined"
@@ -62,7 +68,9 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="email"
             style={styles.input}
-            left={<TextInput.Icon icon="email" />}
+            left={<TextInput.Icon icon="email-outline" />}
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <TextInput
@@ -74,17 +82,19 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="password"
             style={styles.input}
-            left={<TextInput.Icon icon="lock" />}
+            left={<TextInput.Icon icon="lock-outline" />}
             right={
               <TextInput.Icon
-                icon={showPassword ? 'eye-off' : 'eye'}
+                icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onPress={() => setShowPassword(!showPassword)}
               />
             }
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           {error ? (
-            <HelperText type="error" visible={!!error}>
+            <HelperText type="error" visible={!!error} style={styles.error}>
               {error}
             </HelperText>
           ) : null}
@@ -95,18 +105,32 @@ export default function LoginScreen() {
             loading={loading}
             disabled={loading}
             style={styles.button}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.buttonLabel}
           >
             Sign In
           </Button>
 
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <Button
-            mode="text"
+            mode="outlined"
             onPress={() => router.push('/(auth)/register')}
-            style={styles.linkButton}
+            style={styles.secondaryButton}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.secondaryButtonLabel}
           >
-            Don't have an account? Sign Up
+            Create an Account
           </Button>
         </View>
+
+        <Text style={styles.footer}>
+          By signing in, you agree to our Terms & Privacy Policy
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -115,37 +139,120 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
+  },
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+    backgroundColor: '#6366F1',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
+    paddingTop: 60,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  logoContainer: {
+    marginBottom: 24,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#6366F1',
   },
   title: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     marginBottom: 8,
+    color: '#FFFFFF',
   },
   subtitle: {
-    opacity: 0.7,
+    color: '#E0E7FF',
+    fontWeight: '500',
   },
-  form: {
+  formCard: {
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
   },
   input: {
-    marginBottom: 12,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  error: {
+    marginBottom: 8,
   },
   button: {
-    marginTop: 16,
-    paddingVertical: 6,
-  },
-  linkButton: {
     marginTop: 8,
+    borderRadius: 12,
+    backgroundColor: '#6366F1',
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#9CA3AF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  secondaryButton: {
+    borderRadius: 12,
+    borderColor: '#E5E7EB',
+    borderWidth: 1.5,
+  },
+  secondaryButtonLabel: {
+    color: '#6366F1',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    marginTop: 24,
+    textAlign: 'center',
+    color: '#9CA3AF',
+    fontSize: 12,
   },
 });
