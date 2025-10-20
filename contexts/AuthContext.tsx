@@ -15,16 +15,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('[AuthContext] Initializing auth...');
         const session = await authService.getSession();
+        console.log('[AuthContext] Session:', session ? 'Found' : 'None');
         setSession(session);
 
         if (session?.user) {
+          console.log('[AuthContext] Fetching profile for user:', session.user.id);
           const profile = await authService.getCurrentProfile();
+          console.log('[AuthContext] Profile:', profile);
           setUser(profile);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('[AuthContext] Error initializing auth:', error);
       } finally {
+        console.log('[AuthContext] Setting loading to false');
         setLoading(false);
       }
     };
@@ -33,21 +38,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        console.log('[AuthContext] Auth state changed:', event);
         setSession(session);
 
         if (session?.user) {
           try {
+            console.log('[AuthContext] Fetching profile after auth change...');
             const profile = await authService.getCurrentProfile();
+            console.log('[AuthContext] Profile fetched:', profile);
             setUser(profile);
           } catch (error) {
-            console.error('Error fetching profile:', error);
+            console.error('[AuthContext] Error fetching profile:', error);
             setUser(null);
           }
         } else {
+          console.log('[AuthContext] No session, clearing user');
           setUser(null);
         }
 
+        console.log('[AuthContext] Setting loading to false (auth change)');
         setLoading(false);
       }
     );

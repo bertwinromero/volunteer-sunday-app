@@ -38,16 +38,45 @@ const createStorageAdapter = () => {
       },
     };
   } else {
-    // Native: use SecureStore
+    // Native: use SecureStore with error handling and timeout
     return {
-      getItem: (key: string) => {
-        return SecureStore.getItemAsync(key);
+      getItem: async (key: string) => {
+        try {
+          console.log('[StorageAdapter] Getting item:', key);
+          const value = await Promise.race([
+            SecureStore.getItemAsync(key),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+          ]);
+          console.log('[StorageAdapter] Got item:', key, value ? 'Found' : 'None');
+          return value;
+        } catch (error) {
+          console.error('[StorageAdapter] Error getting item:', key, error);
+          return null;
+        }
       },
-      setItem: (key: string, value: string) => {
-        return SecureStore.setItemAsync(key, value);
+      setItem: async (key: string, value: string) => {
+        try {
+          console.log('[StorageAdapter] Setting item:', key);
+          await Promise.race([
+            SecureStore.setItemAsync(key, value),
+            new Promise<void>((resolve) => setTimeout(() => resolve(), 5000)),
+          ]);
+          console.log('[StorageAdapter] Set item:', key);
+        } catch (error) {
+          console.error('[StorageAdapter] Error setting item:', key, error);
+        }
       },
-      removeItem: (key: string) => {
-        return SecureStore.deleteItemAsync(key);
+      removeItem: async (key: string) => {
+        try {
+          console.log('[StorageAdapter] Removing item:', key);
+          await Promise.race([
+            SecureStore.deleteItemAsync(key),
+            new Promise<void>((resolve) => setTimeout(() => resolve(), 5000)),
+          ]);
+          console.log('[StorageAdapter] Removed item:', key);
+        } catch (error) {
+          console.error('[StorageAdapter] Error removing item:', key, error);
+        }
       },
     };
   }

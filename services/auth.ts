@@ -110,7 +110,24 @@ export const authService = {
    * Get current session
    */
   async getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    console.log('[authService] Getting session...');
+    try {
+      // Add 10 second timeout for session fetch
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<{data: {session: null}, error: any}>((resolve) =>
+        setTimeout(() => {
+          console.log('[authService] Session fetch timed out after 10s');
+          resolve({ data: { session: null }, error: new Error('Session fetch timeout') });
+        }, 10000)
+      );
+
+      const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+      console.log('[authService] Session result:', session ? 'Found' : 'None', 'Error:', error);
+      if (error && error.message !== 'Session fetch timeout') throw error;
+      return session;
+    } catch (error) {
+      console.error('[authService] Error getting session:', error);
+      return null;
+    }
   },
 };

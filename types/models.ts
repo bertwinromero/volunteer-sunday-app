@@ -57,6 +57,9 @@ export type UserRole = 'admin' | 'volunteer';
 // Program statuses
 export type ProgramStatus = 'draft' | 'active' | 'completed';
 
+// Recurrence patterns
+export type RecurrencePattern = 'weekly' | 'biweekly' | 'monthly';
+
 // Task statuses
 export type TaskStatus = 'pending' | 'completed';
 

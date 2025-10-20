@@ -52,12 +52,19 @@ export interface Database {
           id: string
           title: string
           date: string
+          start_time: string | null
+          end_time: string | null
           status: 'draft' | 'active' | 'completed'
           created_by: string
           share_code: string | null
           share_token: string
           public_access_enabled: boolean
           active_participants_count: number
+          is_recurring: boolean
+          recurrence_pattern: 'weekly' | 'biweekly' | 'monthly' | null
+          recurrence_end_date: string | null
+          recurrence_day_of_week: number | null
+          parent_program_id: string | null
           created_at: string
           updated_at: string
         }
@@ -65,12 +72,19 @@ export interface Database {
           id?: string
           title: string
           date: string
+          start_time?: string | null
+          end_time?: string | null
           status?: 'draft' | 'active' | 'completed'
           created_by: string
           share_code?: string | null
           share_token?: string
           public_access_enabled?: boolean
           active_participants_count?: number
+          is_recurring?: boolean
+          recurrence_pattern?: 'weekly' | 'biweekly' | 'monthly' | null
+          recurrence_end_date?: string | null
+          recurrence_day_of_week?: number | null
+          parent_program_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -78,12 +92,19 @@ export interface Database {
           id?: string
           title?: string
           date?: string
+          start_time?: string | null
+          end_time?: string | null
           status?: 'draft' | 'active' | 'completed'
           created_by?: string
           share_code?: string | null
           share_token?: string
           public_access_enabled?: boolean
           active_participants_count?: number
+          is_recurring?: boolean
+          recurrence_pattern?: 'weekly' | 'biweekly' | 'monthly' | null
+          recurrence_end_date?: string | null
+          recurrence_day_of_week?: number | null
+          parent_program_id?: string | null
           created_at?: string
           updated_at?: string
         }
