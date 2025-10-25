@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, Text, useTheme, HelperText } from 'react-native-paper';
+import { TextInput, Button, Text, useTheme, HelperText, IconButton } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 
@@ -39,7 +39,15 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <View style={styles.backgroundGradient} />
+      <View style={styles.backgroundGradient}>
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          iconColor="#FFFFFF"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        />
+      </View>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -126,6 +134,22 @@ export default function LoginScreen() {
           >
             Create an Account
           </Button>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Button
+            mode="text"
+            onPress={() => router.push('/(guest)/join')}
+            style={styles.guestButton}
+            labelStyle={styles.guestButtonLabel}
+            icon="account-group"
+          >
+            Join as Guest
+          </Button>
         </View>
 
         <Text style={styles.footer}>
@@ -150,6 +174,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#6366F1',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 8,
+    margin: 0,
   },
   scrollContent: {
     flexGrow: 1,
@@ -254,5 +284,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#9CA3AF',
     fontSize: 12,
+  },
+  guestButton: {
+    marginTop: 8,
+  },
+  guestButtonLabel: {
+    color: '#6366F1',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

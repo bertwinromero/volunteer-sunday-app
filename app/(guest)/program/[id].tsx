@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, SafeAreaView } from 'react-native';
 import { Text, Surface, Chip, Button, IconButton } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { databaseService } from '../../../services/database';
@@ -131,18 +131,18 @@ export default function GuestProgramViewScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
+      <SafeAreaView style={styles.centerContainer}>
         <Text>Loading program...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!program) {
     return (
-      <View style={styles.centerContainer}>
+      <SafeAreaView style={styles.centerContainer}>
         <Text>Program not found</Text>
         <Button onPress={() => router.replace('/')}>Go Home</Button>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -152,47 +152,69 @@ export default function GuestProgramViewScreen() {
       : null;
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <Surface style={styles.header} elevation={2}>
+    <SafeAreaView style={styles.container}>
+      {/* Header with Gradient */}
+      <View style={styles.headerGradient}>
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
-            <Text variant="headlineSmall" style={styles.headerTitle}>
+            <Text variant="headlineMedium" style={styles.headerTitle}>
               {program.title}
             </Text>
-            <Text variant="bodyMedium" style={styles.headerSubtitle}>
+            <Text variant="bodyLarge" style={styles.headerSubtitle}>
               {format(parseISO(program.date), 'EEEE, MMMM d, yyyy')}
             </Text>
           </View>
-          <IconButton icon="exit-to-app" onPress={handleLeave} />
+          <IconButton
+            icon="exit-to-app"
+            iconColor="#FFFFFF"
+            size={24}
+            onPress={handleLeave}
+            style={styles.exitButton}
+          />
         </View>
-      </Surface>
+      </View>
 
       {/* What's Next Section */}
       {nextItem && (
-        <Surface style={styles.nextSection} elevation={1}>
-          <Text variant="labelLarge" style={styles.nextLabel}>
-            WHAT'S NEXT
-          </Text>
-          <View style={styles.nextContent}>
-            <View style={styles.nextInfo}>
-              <Text variant="titleLarge" style={styles.nextTitle}>
-                {nextItem.title}
-              </Text>
-              <Text variant="bodyMedium" style={styles.nextTime}>
-                {nextItem.time} • {getTimeUntilItem(nextItem)}
+        <View style={styles.nextContainer}>
+          <Surface style={styles.nextCard} elevation={0}>
+            <View style={styles.nextHeader}>
+              <Text variant="labelLarge" style={styles.nextLabel}>
+                WHAT'S NEXT
               </Text>
             </View>
-            <Chip mode="flat" style={styles.nextChip}>
-              {nextItem.duration_minutes} min
-            </Chip>
-          </View>
-        </Surface>
+            <View style={styles.nextContent}>
+              <View style={styles.nextInfo}>
+                <Text variant="titleLarge" style={styles.nextTitle}>
+                  {nextItem.title}
+                </Text>
+                <View style={styles.nextMeta}>
+                  <Text style={styles.metaIcon}>🕐</Text>
+                  <Text variant="bodyMedium" style={styles.nextTime}>
+                    {nextItem.time}
+                  </Text>
+                  <Text style={styles.metaSeparator}>•</Text>
+                  <Text variant="bodyMedium" style={styles.nextCountdown}>
+                    {getTimeUntilItem(nextItem)}
+                  </Text>
+                </View>
+              </View>
+              <Chip
+                mode="flat"
+                style={styles.nextChip}
+                textStyle={styles.nextChipText}
+              >
+                {nextItem.duration_minutes} min
+              </Chip>
+            </View>
+          </Surface>
+        </View>
       )}
 
       {/* Program Timeline */}
       <ScrollView
         style={styles.timeline}
+        contentContainerStyle={styles.timelineContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -206,11 +228,11 @@ export default function GuestProgramViewScreen() {
             <Surface
               key={item.id}
               style={[
-                styles.timelineItem,
-                isCurrent && styles.timelineItemCurrent,
-                isPast && styles.timelineItemPast,
+                styles.timelineCard,
+                isCurrent && styles.timelineCardCurrent,
+                isPast && styles.timelineCardPast,
               ]}
-              elevation={isCurrent ? 3 : 1}
+              elevation={0}
             >
               <View style={styles.timelineIndicator}>
                 <View
@@ -230,21 +252,25 @@ export default function GuestProgramViewScreen() {
                 )}
               </View>
 
-              <View style={styles.timelineContent}>
+              <View style={styles.timelineItemContent}>
                 <View style={styles.timelineHeader}>
                   <Text
                     variant="labelLarge"
                     style={[
                       styles.timelineTime,
                       isCurrent && styles.timelineTimeCurrent,
+                      isPast && styles.timelineTimePast,
                     ]}
                   >
                     {item.time}
                   </Text>
                   <Chip
-                    mode="outlined"
-                    compact
-                    style={styles.durationChip}
+                    mode="flat"
+                    style={[
+                      styles.durationChip,
+                      isCurrent && styles.durationChipCurrent,
+                    ]}
+                    textStyle={styles.durationChipText}
                   >
                     {item.duration_minutes} min
                   </Chip>
@@ -274,14 +300,10 @@ export default function GuestProgramViewScreen() {
                 )}
 
                 {isCurrent && (
-                  <Chip
-                    icon="circle"
-                    mode="flat"
-                    style={styles.currentChip}
-                    textStyle={styles.currentChipText}
-                  >
-                    Current
-                  </Chip>
+                  <View style={styles.currentBadge}>
+                    <View style={styles.currentIndicator} />
+                    <Text style={styles.currentText}>Current</Text>
+                  </View>
                 )}
 
                 {isFuture && (
@@ -294,25 +316,34 @@ export default function GuestProgramViewScreen() {
           );
         })}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#F9FAFB',
   },
-  header: {
-    backgroundColor: '#fff',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+  // Header Styles
+  headerGradient: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   headerContent: {
     flexDirection: 'row',
@@ -323,87 +354,159 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   headerSubtitle: {
-    opacity: 0.7,
-    marginTop: 4,
+    color: '#E0E7FF',
+    fontWeight: '500',
   },
-  nextSection: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginTop: 8,
+  exitButton: {
+    margin: 0,
+  },
+  // What's Next Styles
+  nextContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  nextCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+  nextHeader: {
+    marginBottom: 12,
   },
   nextLabel: {
-    opacity: 0.6,
-    marginBottom: 8,
+    color: '#6366F1',
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
   nextContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   nextInfo: {
     flex: 1,
+    marginRight: 12,
   },
   nextTitle: {
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  nextMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaIcon: {
+    fontSize: 14,
   },
   nextTime: {
-    opacity: 0.7,
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  metaSeparator: {
+    color: '#D1D5DB',
+    fontSize: 12,
+  },
+  nextCountdown: {
+    color: '#6366F1',
+    fontSize: 14,
+    fontWeight: '600',
   },
   nextChip: {
-    marginLeft: 12,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 8,
+    height: 32,
   },
+  nextChipText: {
+    color: '#6366F1',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  // Timeline Styles
   timeline: {
     flex: 1,
-    padding: 16,
   },
-  timelineItem: {
+  timelineContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  timelineCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
-  timelineItemCurrent: {
-    backgroundColor: '#e3f2fd',
+  timelineCardCurrent: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#6366F1',
     borderLeftWidth: 4,
-    borderLeftColor: '#2196f3',
+    borderLeftColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  timelineItemPast: {
-    opacity: 0.6,
+  timelineCardPast: {
+    opacity: 0.65,
   },
   timelineIndicator: {
     alignItems: 'center',
     marginRight: 16,
+    width: 20,
   },
   timelineDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#D1D5DB',
+    borderWidth: 2,
+    borderColor: '#F3F4F6',
   },
   timelineDotCurrent: {
-    backgroundColor: '#2196f3',
+    backgroundColor: '#6366F1',
+    borderColor: '#C7D2FE',
     width: 16,
     height: 16,
     borderRadius: 8,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   timelineDotPast: {
-    backgroundColor: '#9e9e9e',
+    backgroundColor: '#9CA3AF',
+    borderColor: '#E5E7EB',
   },
   timelineLine: {
     width: 2,
     flex: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#E5E7EB',
     marginTop: 4,
   },
   timelineLinePast: {
-    backgroundColor: '#bdbdbd',
+    backgroundColor: '#D1D5DB',
   },
-  timelineContent: {
+  timelineItemContent: {
     flex: 1,
   },
   timelineHeader: {
@@ -413,42 +516,77 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timelineTime: {
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#6B7280',
+    fontSize: 14,
+    letterSpacing: 0.3,
   },
   timelineTimeCurrent: {
-    color: '#2196f3',
+    color: '#6366F1',
+  },
+  timelineTimePast: {
+    color: '#9CA3AF',
   },
   durationChip: {
-    height: 24,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    height: 28,
+  },
+  durationChipCurrent: {
+    backgroundColor: '#DDD6FE',
+  },
+  durationChipText: {
+    color: '#6B7280',
+    fontWeight: '600',
+    fontSize: 12,
   },
   timelineTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#111827',
     marginBottom: 4,
+    fontSize: 16,
   },
   timelineTitleCurrent: {
-    color: '#1976d2',
+    color: '#4338CA',
   },
   timelineTitlePast: {
-    opacity: 0.8,
+    color: '#6B7280',
   },
   timelineDescription: {
-    opacity: 0.7,
+    color: '#6B7280',
     lineHeight: 20,
     marginBottom: 8,
+    fontSize: 14,
   },
   timelineDescriptionPast: {
-    opacity: 0.6,
+    color: '#9CA3AF',
   },
-  currentChip: {
+  currentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     marginTop: 8,
-    backgroundColor: '#2196f3',
+    gap: 6,
   },
-  currentChipText: {
-    color: '#fff',
+  currentIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+  },
+  currentText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
   timeUntil: {
-    opacity: 0.6,
+    color: '#8B5CF6',
+    fontSize: 13,
+    fontWeight: '500',
     marginTop: 4,
   },
 });

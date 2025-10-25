@@ -119,6 +119,7 @@ export interface Database {
           duration_minutes: number
           order: number
           has_task: boolean
+          person_in_charge: string | null
           created_at: string
           updated_at: string
         }
@@ -131,6 +132,7 @@ export interface Database {
           duration_minutes: number
           order: number
           has_task?: boolean
+          person_in_charge?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -143,6 +145,7 @@ export interface Database {
           duration_minutes?: number
           order?: number
           has_task?: boolean
+          person_in_charge?: string | null
           created_at?: string
           updated_at?: string
         }

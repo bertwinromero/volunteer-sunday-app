@@ -1,3 +1,5 @@
+import 'react-native-gesture-handler';
+import 'react-native-reanimated';
 import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
@@ -48,22 +50,34 @@ function NavigationProtector() {
     }
 
     const inAuthGroup = segments[0] === '(auth)';
-    console.log('[NavigationProtector] In auth group:', inAuthGroup);
+    const inGuestGroup = segments[0] === '(guest)';
+    const inAdminGroup = segments[0] === '(admin)';
+    const inVolunteerGroup = segments[0] === '(volunteer)';
+    const onIndexPage = segments.length === 0;
+    const onProgramDeepLink = segments[0] === 'program';
 
-    if (!user && !inAuthGroup) {
-      // Redirect to login if not authenticated
-      console.log('[NavigationProtector] No user, redirecting to login');
-      router.replace('/(auth)/login');
+    console.log('[NavigationProtector] Groups - Auth:', inAuthGroup, 'Guest:', inGuestGroup, 'Admin:', inAdminGroup, 'Volunteer:', inVolunteerGroup, 'Index:', onIndexPage, 'DeepLink:', onProgramDeepLink);
+
+    // Allow access to public routes without authentication
+    const publicRoutes = inAuthGroup || inGuestGroup || onIndexPage || onProgramDeepLink;
+
+    if (!user && !publicRoutes) {
+      // Redirect to welcome/index if trying to access protected routes
+      console.log('[NavigationProtector] No user and not on public route, redirecting to index');
+      router.replace('/');
     } else if (user && inAuthGroup) {
-      // Redirect to appropriate home based on role
+      // Redirect authenticated users away from auth screens
       console.log('[NavigationProtector] User in auth group, redirecting based on role:', user.role);
       if (user.role === 'admin') {
         router.replace('/(admin)/dashboard');
       } else {
         router.replace('/(volunteer)/home');
       }
+    } else if (user && (inAdminGroup || inVolunteerGroup)) {
+      // User is in correct protected area, do nothing
+      console.log('[NavigationProtector] User in correct protected area');
     } else {
-      console.log('[NavigationProtector] User authenticated, staying on current page');
+      console.log('[NavigationProtector] Allowing current navigation');
     }
   }, [user, segments, loading]);
 

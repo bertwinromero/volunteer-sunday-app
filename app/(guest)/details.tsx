@@ -57,13 +57,19 @@ export default function GuestDetailsScreen() {
       // Get device ID
       const deviceId = await participantService.getDeviceId();
 
-      // Request notification permissions
-      const { status } = await Notifications.requestPermissionsAsync();
+      // Request notification permissions (optional)
       let expoPushToken: string | undefined;
 
-      if (status === 'granted') {
-        const tokenData = await Notifications.getExpoPushTokenAsync();
-        expoPushToken = tokenData.data;
+      try {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status === 'granted') {
+          const tokenData = await Notifications.getExpoPushTokenAsync();
+          expoPushToken = tokenData.data;
+        }
+      } catch (notifError) {
+        // Notifications not available or projectId not configured
+        // Continue without push token - notifications won't work but app will function
+        console.log('Push notifications not available:', notifError);
       }
 
       // Join the program

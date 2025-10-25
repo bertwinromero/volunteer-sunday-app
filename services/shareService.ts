@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { Program, ShareLink } from '../types';
 import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 
 export const shareService = {
   /**
@@ -16,7 +17,8 @@ export const shareService = {
     if (error) throw error;
     if (!data) return null;
 
-    const url = Linking.createURL(`/program/${data.share_token}`);
+    // Generate production-ready URL
+    const url = shareService.generateShareUrl(data.share_token);
 
     return {
       programId: data.id,
@@ -24,6 +26,22 @@ export const shareService = {
       shareToken: data.share_token,
       url,
     };
+  },
+
+  /**
+   * Generate share URL based on environment
+   */
+  generateShareUrl(token: string): string {
+    // Check if running in Expo Go (development)
+    const isExpoGo = Constants.appOwnership === 'expo';
+
+    if (isExpoGo) {
+      // Use Expo development URL
+      return Linking.createURL(`/program/${token}`);
+    } else {
+      // Use custom URL scheme for production builds
+      return `volunteerapp://program/${token}`;
+    }
   },
 
   /**
@@ -79,7 +97,7 @@ export const shareService = {
 
     if (error) throw error;
 
-    const url = Linking.createURL(`/program/${data.share_token}`);
+    const url = shareService.generateShareUrl(data.share_token);
 
     return {
       programId: data.id,

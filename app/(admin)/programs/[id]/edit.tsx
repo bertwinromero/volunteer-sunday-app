@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, Text, HelperText, IconButton, Divider, Switch, Chip } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, IconButton, Divider, Switch, Chip, FAB } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { databaseService } from '../../../../services/database';
 import { ProgramItemInsert, ProgramItemUpdate, RecurrencePattern, ProgramWithItems, ProgramItem } from '../../../../types';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 interface ProgramItemForm {
   id: string;
@@ -13,6 +15,7 @@ interface ProgramItemForm {
   title: string;
   description: string;
   duration_minutes: string;
+  person_in_charge: string;
   isNew?: boolean; // Track if this is a newly added item
   isDeleted?: boolean; // Track if this item should be deleted
   originalId?: string; // Store original DB id for existing items
@@ -87,13 +90,14 @@ export default function EditProgramScreen() {
         title: item.title,
         description: item.description || '',
         duration_minutes: item.duration_minutes.toString(),
+        person_in_charge: item.person_in_charge || '',
         isNew: false,
         isDeleted: false,
         originalId: item.id,
       }));
 
       setItems(formItems.length > 0 ? formItems : [
-        { id: 'new-1', time: '', title: '', description: '', duration_minutes: '', isNew: true },
+        { id: 'new-1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '', isNew: true },
       ]);
     } catch (err: any) {
       console.error('Error loading program:', err);
@@ -137,6 +141,7 @@ export default function EditProgramScreen() {
         title: '',
         description: '',
         duration_minutes: '',
+        person_in_charge: '',
         isNew: true,
       },
     ]);
@@ -325,6 +330,7 @@ export default function EditProgramScreen() {
             time: item.time,
             title: item.title.trim(),
             description: item.description.trim() || null,
+            person_in_charge: item.person_in_charge.trim() || null,
             duration_minutes: parseInt(item.duration_minutes),
             order: i,
           };
@@ -335,6 +341,7 @@ export default function EditProgramScreen() {
             time: item.time,
             title: item.title.trim(),
             description: item.description.trim() || null,
+            person_in_charge: item.person_in_charge.trim() || null,
             duration_minutes: parseInt(item.duration_minutes),
             order: i,
           };
@@ -360,6 +367,104 @@ export default function EditProgramScreen() {
     }
   };
 
+  const renderItem = ({ item, drag, isActive, getIndex }: RenderItemParams<ProgramItemForm>) => {
+    if (item.isDeleted) return null;
+    const index = getIndex();
+    if (index === undefined) return null;
+
+    return (
+      <ScaleDecorator>
+        <View style={[styles.itemCard, isActive && styles.itemCardDragging]}>
+          <View style={styles.itemHeader}>
+            <View style={styles.itemHeaderLeft}>
+              <IconButton
+                icon="drag"
+                size={20}
+                onPressIn={drag}
+                disabled={saving}
+                style={styles.dragHandle}
+              />
+              <Text variant="labelLarge">Item {index + 1}</Text>
+            </View>
+            {visibleItems.length > 1 && (
+              <IconButton
+                icon="close"
+                size={20}
+                onPress={() => removeItem(item.id)}
+                disabled={saving}
+              />
+            )}
+          </View>
+
+          <View style={styles.datePickerContainer}>
+            <Text variant="labelLarge" style={styles.dateLabel}>
+              Time *
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={() => openItemTimePicker(item.id)}
+              icon="clock-outline"
+              style={styles.dateButton}
+              contentStyle={styles.dateButtonContent}
+              disabled={saving}
+            >
+              {item.time ? (
+                (() => {
+                  const timeObj = getItemTime(item.id);
+                  return timeObj ? formatTimeDisplay(timeObj) : item.time;
+                })()
+              ) : 'Select Time'}
+            </Button>
+          </View>
+
+          <TextInput
+            label="Title *"
+            value={item.title}
+            onChangeText={(value) => updateItem(item.id, 'title', value)}
+            mode="outlined"
+            style={styles.input}
+            placeholder="e.g., Praise and Worship"
+            disabled={saving}
+          />
+
+          <TextInput
+            label="Description (Optional)"
+            value={item.description}
+            onChangeText={(value) => updateItem(item.id, 'description', value)}
+            mode="outlined"
+            style={styles.input}
+            placeholder="Additional details..."
+            multiline
+            numberOfLines={2}
+            disabled={saving}
+          />
+
+          <TextInput
+            label="Person In Charge (Optional)"
+            value={item.person_in_charge}
+            onChangeText={(value) => updateItem(item.id, 'person_in_charge', value)}
+            mode="outlined"
+            style={styles.input}
+            placeholder="e.g., John Doe"
+            left={<TextInput.Icon icon="account-outline" />}
+            disabled={saving}
+          />
+
+          <TextInput
+            label="Duration (minutes) *"
+            value={item.duration_minutes}
+            onChangeText={(value) => updateItem(item.id, 'duration_minutes', value)}
+            mode="outlined"
+            style={styles.input}
+            placeholder="30"
+            keyboardType="number-pad"
+            disabled={saving}
+          />
+        </View>
+      </ScaleDecorator>
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -372,20 +477,33 @@ export default function EditProgramScreen() {
   const visibleItems = items.filter(item => !item.isDeleted);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          Edit Program
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Update program details and schedule
-        </Text>
+    <GestureHandlerRootView style={styles.container}>
+      {/* Header with Gradient */}
+      <View style={styles.headerGradient}>
+        <View style={styles.header}>
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            iconColor="#FFFFFF"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          />
+          <View>
+            <Text variant="headlineMedium" style={styles.title}>
+              Edit Program
+            </Text>
+            <Text variant="bodyMedium" style={styles.subtitle}>
+              Update program details
+            </Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.section}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>
-          Program Details
-        </Text>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Program Details
+          </Text>
 
         <TextInput
           label="Program Title *"
@@ -532,121 +650,68 @@ export default function EditProgramScreen() {
         </View>
       </View>
 
-      <Divider style={styles.divider} />
-
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Program Items
           </Text>
           <Button
-            mode="outlined"
+            mode="contained"
             onPress={addItem}
             icon="plus"
             compact
             disabled={saving}
+            style={styles.addButton}
+            buttonColor="#6366F1"
+            textColor="#FFFFFF"
           >
             Add Item
           </Button>
         </View>
 
-        {visibleItems.map((item, index) => (
-          <View key={item.id} style={styles.itemCard}>
-            <View style={styles.itemHeader}>
-              <Text variant="labelLarge">Item {index + 1}</Text>
-              {visibleItems.length > 1 && (
-                <IconButton
-                  icon="close"
-                  size={20}
-                  onPress={() => removeItem(item.id)}
-                  disabled={saving}
-                />
-              )}
-            </View>
-
-            <View style={styles.datePickerContainer}>
-              <Text variant="labelLarge" style={styles.dateLabel}>
-                Time *
-              </Text>
-              <Button
-                mode="outlined"
-                onPress={() => openItemTimePicker(item.id)}
-                icon="clock-outline"
-                style={styles.dateButton}
-                contentStyle={styles.dateButtonContent}
-                disabled={saving}
-              >
-                {item.time ? (
-                  (() => {
-                    const timeObj = getItemTime(item.id);
-                    return timeObj ? formatTimeDisplay(timeObj) : item.time;
-                  })()
-                ) : 'Select Time'}
-              </Button>
-            </View>
-
-            <TextInput
-              label="Title *"
-              value={item.title}
-              onChangeText={(value) => updateItem(item.id, 'title', value)}
-              mode="outlined"
-              style={styles.input}
-              placeholder="e.g., Praise and Worship"
-              disabled={saving}
-            />
-
-            <TextInput
-              label="Description (Optional)"
-              value={item.description}
-              onChangeText={(value) => updateItem(item.id, 'description', value)}
-              mode="outlined"
-              style={styles.input}
-              placeholder="Additional details..."
-              multiline
-              numberOfLines={2}
-              disabled={saving}
-            />
-
-            <TextInput
-              label="Duration (minutes) *"
-              value={item.duration_minutes}
-              onChangeText={(value) => updateItem(item.id, 'duration_minutes', value)}
-              mode="outlined"
-              style={styles.input}
-              placeholder="30"
-              keyboardType="number-pad"
-              disabled={saving}
-            />
-          </View>
-        ))}
+        <DraggableFlatList
+          data={visibleItems}
+          onDragEnd={({ data }) => {
+            // Merge with deleted items
+            const deletedItems = items.filter(item => item.isDeleted);
+            setItems([...data, ...deletedItems]);
+          }}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          containerStyle={styles.draggableList}
+        />
       </View>
 
-      {error ? (
-        <HelperText type="error" visible={!!error} style={styles.error}>
-          {error}
-        </HelperText>
-      ) : null}
+        {error ? (
+          <HelperText type="error" visible={!!error} style={styles.error}>
+            {error}
+          </HelperText>
+        ) : null}
 
-      <View style={styles.actions}>
-        <Button
-          mode="contained"
-          onPress={handleUpdate}
-          loading={saving}
-          disabled={saving}
-          style={styles.createButton}
-          contentStyle={styles.buttonContent}
-        >
-          Update Program
-        </Button>
+        <View style={styles.actions}>
+          <Button
+            mode="contained"
+            onPress={handleUpdate}
+            loading={saving}
+            disabled={saving}
+            style={styles.createButton}
+            contentStyle={styles.buttonContent}
+            buttonColor="#6366F1"
+          >
+            Update Program
+          </Button>
 
-        <Button
-          mode="text"
-          onPress={() => router.back()}
-          disabled={saving}
-        >
-          Cancel
-        </Button>
-      </View>
+          <Button
+            mode="outlined"
+            onPress={() => router.back()}
+            disabled={saving}
+            style={styles.cancelButton}
+            textColor="#6B7280"
+          >
+            Cancel
+          </Button>
+        </View>
+      </ScrollView>
 
       <DatePickerModal
         locale="en"
@@ -707,37 +772,79 @@ export default function EditProgramScreen() {
         minutes={selectedItemId ? getItemTime(selectedItemId)?.minutes : undefined}
         label="Select Item Time"
       />
-    </ScrollView>
+
+      {/* Floating Action Button for Adding Items */}
+      <FAB
+        icon="plus"
+        label="Add Item"
+        onPress={addItem}
+        disabled={loading}
+        style={styles.fab}
+        color="#FFFFFF"
+      />
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#F9FAFB',
   },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
+  headerGradient: {
+    backgroundColor: '#6366F1',
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   header: {
-    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backButton: {
+    margin: 0,
   },
   title: {
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   subtitle: {
-    opacity: 0.7,
+    color: '#E0E7FF',
+    fontWeight: '500',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 40,
   },
   section: {
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -746,21 +853,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#111827',
     marginBottom: 16,
   },
+  addButton: {
+    borderRadius: 8,
+  },
   input: {
-    marginBottom: 12,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   datePickerContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   dateLabel: {
     marginBottom: 8,
-    opacity: 0.7,
+    color: '#374151',
+    fontWeight: '500',
   },
   dateButton: {
     justifyContent: 'flex-start',
+    borderRadius: 8,
+    borderColor: '#E5E7EB',
   },
   dateButtonContent: {
     justifyContent: 'flex-start',
@@ -769,19 +884,31 @@ const styles = StyleSheet.create({
   timeContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   timeField: {
     flex: 1,
   },
-  divider: {
-    marginVertical: 24,
+  draggableList: {
+    flex: 1,
   },
   itemCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  itemCardDragging: {
+    opacity: 0.9,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    borderColor: '#6366F1',
+    borderWidth: 2,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -789,14 +916,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  itemHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dragHandle: {
+    margin: 0,
+    marginRight: 4,
+  },
   error: {
     marginBottom: 16,
   },
   actions: {
     marginTop: 24,
+    gap: 12,
   },
   createButton: {
-    marginBottom: 12,
+    borderRadius: 12,
+  },
+  cancelButton: {
+    borderRadius: 12,
+    borderColor: '#E5E7EB',
   },
   buttonContent: {
     paddingVertical: 8,
@@ -804,11 +944,13 @@ const styles = StyleSheet.create({
   durationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e3f2fd',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    padding: 16,
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
   },
   durationIcon: {
     margin: 0,
@@ -818,18 +960,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   durationLabel: {
-    opacity: 0.7,
-    marginBottom: 2,
+    color: '#6B7280',
+    marginBottom: 4,
+    fontSize: 12,
+    fontWeight: '500',
   },
   durationValue: {
-    fontWeight: '600',
-    color: '#1976d2',
+    fontWeight: '700',
+    color: '#6366F1',
+    fontSize: 18,
   },
   recurringContainer: {
     marginTop: 16,
     padding: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   switchRow: {
     flexDirection: 'row',
@@ -843,13 +990,13 @@ const styles = StyleSheet.create({
   },
   switchHint: {
     marginTop: 4,
-    opacity: 0.6,
+    color: '#6B7280',
   },
   recurringOptions: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#E5E7EB',
   },
   patternChips: {
     flexDirection: 'row',
@@ -860,5 +1007,18 @@ const styles = StyleSheet.create({
   chip: {
     marginRight: 8,
     marginBottom: 8,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#6366F1',
+    borderRadius: 16,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });

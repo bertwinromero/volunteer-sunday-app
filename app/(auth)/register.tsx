@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, Text, HelperText, RadioButton } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, RadioButton, IconButton } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { UserRole } from '../../types';
@@ -65,11 +65,25 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <View style={styles.backgroundGradient}>
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          iconColor="#FFFFFF"
+          onPress={() => router.back()}
+          style={styles.backButton}
+        />
+      </View>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>SP</Text>
+            </View>
+          </View>
           <Text variant="headlineLarge" style={styles.title}>
             Create Account
           </Text>
@@ -78,7 +92,7 @@ export default function RegisterScreen() {
           </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={styles.formCard}>
           <TextInput
             label="First Name *"
             value={firstName}
@@ -87,6 +101,8 @@ export default function RegisterScreen() {
             autoCapitalize="words"
             style={styles.input}
             left={<TextInput.Icon icon="account" />}
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <TextInput
@@ -97,6 +113,8 @@ export default function RegisterScreen() {
             autoCapitalize="words"
             style={styles.input}
             left={<TextInput.Icon icon="account-outline" />}
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <TextInput
@@ -107,10 +125,12 @@ export default function RegisterScreen() {
             autoCapitalize="words"
             style={styles.input}
             left={<TextInput.Icon icon="account-circle-outline" />}
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <TextInput
-            label="Email"
+            label="Email Address"
             value={email}
             onChangeText={setEmail}
             mode="outlined"
@@ -118,7 +138,9 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             autoComplete="email"
             style={styles.input}
-            left={<TextInput.Icon icon="email" />}
+            left={<TextInput.Icon icon="email-outline" />}
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <TextInput
@@ -131,13 +153,15 @@ export default function RegisterScreen() {
             autoComplete="new-password"
             textContentType="newPassword"
             style={styles.input}
-            left={<TextInput.Icon icon="lock" />}
+            left={<TextInput.Icon icon="lock-outline" />}
             right={
               <TextInput.Icon
-                icon={showPassword ? 'eye-off' : 'eye'}
+                icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onPress={() => setShowPassword(!showPassword)}
               />
             }
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <TextInput
@@ -150,13 +174,15 @@ export default function RegisterScreen() {
             autoComplete="new-password"
             textContentType="newPassword"
             style={styles.input}
-            left={<TextInput.Icon icon="lock-check" />}
+            left={<TextInput.Icon icon="lock-check-outline" />}
             right={
               <TextInput.Icon
-                icon={showPassword ? 'eye-off' : 'eye'}
+                icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 onPress={() => setShowPassword(!showPassword)}
               />
             }
+            outlineColor="#E5E7EB"
+            activeOutlineColor="#6366F1"
           />
 
           <View style={styles.roleContainer}>
@@ -176,7 +202,7 @@ export default function RegisterScreen() {
           </View>
 
           {error ? (
-            <HelperText type="error" visible={!!error}>
+            <HelperText type="error" visible={!!error} style={styles.error}>
               {error}
             </HelperText>
           ) : null}
@@ -187,18 +213,48 @@ export default function RegisterScreen() {
             loading={loading}
             disabled={loading}
             style={styles.button}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.buttonLabel}
           >
-            Sign Up
+            Create Account
           </Button>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Button
+            mode="outlined"
+            onPress={() => router.push('/(auth)/login')}
+            style={styles.secondaryButton}
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.secondaryButtonLabel}
+          >
+            Sign In Instead
+          </Button>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           <Button
             mode="text"
-            onPress={() => router.push('/(auth)/login')}
-            style={styles.linkButton}
+            onPress={() => router.push('/(guest)/join')}
+            style={styles.guestButton}
+            labelStyle={styles.guestButtonLabel}
+            icon="account-group"
           >
-            Already have an account? Sign In
+            Join as Guest
           </Button>
         </View>
+
+        <Text style={styles.footer}>
+          By signing up, you agree to our Terms & Privacy Policy
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -207,50 +263,148 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
+  },
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+    backgroundColor: '#6366F1',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 8,
+    margin: 0,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
+    paddingTop: 60,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  logoContainer: {
+    marginBottom: 24,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#6366F1',
   },
   title: {
-    fontWeight: 'bold',
+    fontWeight: '700',
     marginBottom: 8,
+    color: '#FFFFFF',
   },
   subtitle: {
-    opacity: 0.7,
+    color: '#E0E7FF',
+    fontWeight: '500',
   },
-  form: {
+  formCard: {
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
   },
   input: {
-    marginBottom: 12,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   roleContainer: {
-    marginBottom: 12,
-    marginTop: 8,
+    marginBottom: 16,
+    marginTop: 4,
   },
   roleLabel: {
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#374151',
   },
   radioItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
-  button: {
-    marginTop: 16,
-    paddingVertical: 6,
+  error: {
+    marginBottom: 8,
   },
-  linkButton: {
+  button: {
     marginTop: 8,
+    borderRadius: 12,
+    backgroundColor: '#6366F1',
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#9CA3AF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  secondaryButton: {
+    borderRadius: 12,
+    borderColor: '#E5E7EB',
+    borderWidth: 1.5,
+  },
+  secondaryButtonLabel: {
+    color: '#6366F1',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guestButton: {
+    marginTop: 8,
+  },
+  guestButtonLabel: {
+    color: '#6366F1',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  footer: {
+    marginTop: 24,
+    textAlign: 'center',
+    color: '#9CA3AF',
+    fontSize: 12,
   },
 });

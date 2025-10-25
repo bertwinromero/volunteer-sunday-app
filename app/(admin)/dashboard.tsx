@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     loadPrograms();
@@ -102,6 +102,33 @@ export default function AdminDashboard() {
     );
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              // Explicitly navigate to welcome screen
+              router.replace('/');
+            } catch (error) {
+              console.error('Error logging out:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const stats = getStats();
 
   if (loading) {
@@ -117,7 +144,7 @@ export default function AdminDashboard() {
       {/* Header with Gradient Effect */}
       <View style={styles.headerGradient}>
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerTextContainer}>
             <Text variant="displaySmall" style={styles.headerTitle}>
               Dashboard
             </Text>
@@ -125,6 +152,13 @@ export default function AdminDashboard() {
               Welcome back, {user?.first_name} 👋
             </Text>
           </View>
+          <IconButton
+            icon="logout"
+            size={24}
+            iconColor="#FFFFFF"
+            onPress={handleLogout}
+            style={styles.logoutButton}
+          />
         </View>
       </View>
 
@@ -315,6 +349,12 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   headerTitle: {
     fontWeight: '700',
@@ -324,6 +364,9 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     color: '#E0E7FF',
     fontWeight: '500',
+  },
+  logoutButton: {
+    margin: 0,
   },
   statsContainer: {
     flexDirection: 'row',
