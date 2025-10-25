@@ -4,6 +4,7 @@ import { Text, Surface, Chip, Button, IconButton } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { databaseService } from '../../../services/database';
 import { participantService } from '../../../services/participantService';
+import { notificationService } from '../../../services/notifications';
 import { ProgramWithItems, ProgramItem } from '../../../types';
 import { format, parseISO } from 'date-fns';
 
@@ -19,6 +20,7 @@ export default function GuestProgramViewScreen() {
   const participantId = params.participantId as string;
 
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const scheduledNotificationsRef = useRef<string[]>([]);
 
   useEffect(() => {
     loadProgram();
@@ -33,6 +35,10 @@ export default function GuestProgramViewScreen() {
       if (heartbeatRef.current) {
         participantService.stopHeartbeat(heartbeatRef.current);
       }
+      // Cancel all scheduled notifications
+      scheduledNotificationsRef.current.forEach((notificationId) => {
+        notificationService.cancelNotification(notificationId);
+      });
     };
   }, [programId, participantId]);
 
@@ -84,6 +90,58 @@ export default function GuestProgramViewScreen() {
     try {
       const data = await databaseService.getProgram(programId);
       setProgram(data);
+
+      // Schedule notifications if program has a date and it's today
+      if (data.date) {
+        const programDate = parseISO(data.date);
+        const today = new Date();
+
+        // Check if program date is today
+        const isToday =
+          programDate.getDate() === today.getDate() &&
+          programDate.getMonth() === today.getMonth() &&
+          programDate.getFullYear() === today.getFullYear();
+
+        console.log('Program date check:', {
+          programDate: programDate.toDateString(),
+          today: today.toDateString(),
+          isToday
+        });
+
+        if (isToday && data.program_items.length > 0) {
+          // Request notification permissions
+          const permissionStatus = await notificationService.requestPermissions();
+          console.log('Notification permission status:', permissionStatus);
+
+          if (permissionStatus !== 'granted') {
+            console.warn('⚠️ Notification permissions not granted!');
+            alert('Please enable notifications in your device settings to receive reminders for program items.');
+            return;
+          }
+
+          // Cancel any previously scheduled notifications
+          scheduledNotificationsRef.current.forEach((notificationId) => {
+            notificationService.cancelNotification(notificationId);
+          });
+          scheduledNotificationsRef.current = [];
+
+          // Schedule new notifications for enabled items
+          console.log(`Attempting to schedule notifications for ${data.program_items.length} items...`);
+          const notificationIds = await notificationService.scheduleProgramItemNotifications(
+            programDate,
+            data.program_items.map(item => ({
+              id: item.id,
+              time: item.time,
+              title: item.title,
+              notify_enabled: item.notify_enabled,
+            }))
+          );
+          scheduledNotificationsRef.current = notificationIds;
+          console.log(`✅ Successfully scheduled ${notificationIds.length} notifications`);
+        } else if (!isToday) {
+          console.log('⏭️ Program is not today, skipping notification scheduling');
+        }
+      }
     } catch (error) {
       console.error('Error loading program:', error);
     } finally {
@@ -99,6 +157,12 @@ export default function GuestProgramViewScreen() {
 
   const handleLeave = async () => {
     try {
+      // Cancel all scheduled notifications
+      scheduledNotificationsRef.current.forEach((notificationId) => {
+        notificationService.cancelNotification(notificationId);
+      });
+      scheduledNotificationsRef.current = [];
+
       if (participantId) {
         await participantService.leaveProgram(participantId, programId);
         await participantService.clearGuestSession();

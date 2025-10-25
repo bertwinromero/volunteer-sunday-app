@@ -102,32 +102,47 @@ export const notificationService = {
   },
 
   /**
-   * Schedule notifications for program items (2 minutes before each)
+   * Schedule notifications for program items (1 minute before each)
    */
   async scheduleProgramItemNotifications(
     programDate: Date,
-    items: Array<{ time: string; title: string; id: string }>
+    items: Array<{ time: string; title: string; id: string; notify_enabled?: boolean }>
   ) {
     const notifications = [];
 
     for (const item of items) {
-      // Parse time (format: HH:MM:SS)
+      // Skip if notifications are disabled for this item
+      if (item.notify_enabled === false) {
+        continue;
+      }
+
+      // Parse time (format: HH:MM:SS or HH:MM)
       const [hours, minutes] = item.time.split(':').map(Number);
       const itemDateTime = new Date(programDate);
       itemDateTime.setHours(hours, minutes, 0, 0);
 
-      // Schedule 2 minutes before
-      const notificationTime = new Date(itemDateTime.getTime() - 2 * 60 * 1000);
+      // Schedule 1 minute before
+      const notificationTime = new Date(itemDateTime.getTime() - 1 * 60 * 1000);
       const now = new Date();
+
+      console.log(`Item "${item.title}":`, {
+        itemTime: itemDateTime.toLocaleTimeString(),
+        notificationTime: notificationTime.toLocaleTimeString(),
+        now: now.toLocaleTimeString(),
+        willSchedule: notificationTime > now,
+      });
 
       if (notificationTime > now) {
         const id = await this.scheduleNotification(
           'Next Item',
-          `"${item.title}" starts in 2 minutes`,
+          `"${item.title}" starts in 1 minute`,
           { date: notificationTime },
           { type: 'next_item', itemId: item.id, title: item.title }
         );
         notifications.push(id);
+        console.log(`✅ Scheduled notification for "${item.title}" at ${notificationTime.toLocaleTimeString()}`);
+      } else {
+        console.log(`⏭️ Skipped "${item.title}" - notification time already passed`);
       }
     }
 

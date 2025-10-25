@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText, IconButton, Switch, Menu, FAB } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
@@ -16,6 +16,7 @@ interface ProgramItemForm {
   description: string;
   duration_minutes: string;
   person_in_charge: string;
+  notify_enabled: boolean;
 }
 
 export default function CreateProgramScreen() {
@@ -34,7 +35,7 @@ export default function CreateProgramScreen() {
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
 
   const [items, setItems] = useState<ProgramItemForm[]>([
-    { id: '1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '' },
+    { id: '1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '', notify_enabled: true },
   ]);
 
   // Item time picker state
@@ -73,10 +74,11 @@ export default function CreateProgramScreen() {
           description: item.description || '',
           duration_minutes: item.duration_minutes.toString(),
           person_in_charge: item.person_in_charge || '',
+          notify_enabled: item.notify_enabled ?? true,
         }));
 
       setItems(templateItems.length > 0 ? templateItems : [
-        { id: '1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '' },
+        { id: '1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '', notify_enabled: true },
       ]);
       setTitle(template.title);
       if (template.start_time) {
@@ -123,7 +125,7 @@ export default function CreateProgramScreen() {
 
     setItems([
       ...items,
-      { id: newId, time: newItemTime, title: '', description: '', duration_minutes: '', person_in_charge: '' },
+      { id: newId, time: newItemTime, title: '', description: '', duration_minutes: '', person_in_charge: '', notify_enabled: true },
     ]);
   };
 
@@ -133,7 +135,7 @@ export default function CreateProgramScreen() {
     }
   };
 
-  const updateItem = (id: string, field: keyof ProgramItemForm, value: string) => {
+  const updateItem = (id: string, field: keyof ProgramItemForm, value: string | boolean) => {
     setItems(items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
@@ -277,6 +279,7 @@ export default function CreateProgramScreen() {
           person_in_charge: item.person_in_charge.trim() || null,
           duration_minutes: parseInt(item.duration_minutes),
           order: i,
+          notify_enabled: item.notify_enabled,
         };
 
         await databaseService.createProgramItem(programItem);
@@ -404,13 +407,27 @@ export default function CreateProgramScreen() {
             keyboardType="number-pad"
             disabled={loading}
           />
+
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabel}>
+              <Text variant="labelLarge">Send notification</Text>
+              <Text variant="bodySmall" style={styles.switchHint}>
+                Notify users 1 minute before this item
+              </Text>
+            </View>
+            <Switch
+              value={item.notify_enabled}
+              onValueChange={(value) => updateItem(item.id, 'notify_enabled', value)}
+              disabled={loading}
+            />
+          </View>
         </View>
       </ScaleDecorator>
     );
   };
 
-  // Header Component for form fields - memoized to prevent keyboard dismiss
-  const ListHeader = useCallback(() => (
+  // Header Component for form fields - memoized JSX to prevent keyboard dismiss
+  const listHeaderComponent = useMemo(() => (
     <>
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -645,7 +662,7 @@ export default function CreateProgramScreen() {
           onDragEnd={({ data }) => setItems(data)}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          ListHeaderComponent={ListHeader}
+          ListHeaderComponent={listHeaderComponent}
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"

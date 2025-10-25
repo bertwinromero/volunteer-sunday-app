@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText, IconButton, Switch, FAB } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
@@ -16,6 +16,7 @@ interface ProgramItemForm {
   description: string;
   duration_minutes: string;
   person_in_charge: string;
+  notify_enabled: boolean;
   isNew?: boolean; // Track if this is a newly added item
   isDeleted?: boolean; // Track if this item should be deleted
   originalId?: string; // Store original DB id for existing items
@@ -84,13 +85,14 @@ export default function EditProgramScreen() {
         description: item.description || '',
         duration_minutes: item.duration_minutes.toString(),
         person_in_charge: item.person_in_charge || '',
+        notify_enabled: item.notify_enabled ?? true,
         isNew: false,
         isDeleted: false,
         originalId: item.id,
       }));
 
       setItems(formItems.length > 0 ? formItems : [
-        { id: 'new-1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '', isNew: true },
+        { id: 'new-1', time: '', title: '', description: '', duration_minutes: '', person_in_charge: '', notify_enabled: true, isNew: true },
       ]);
     } catch (err: any) {
       console.error('Error loading program:', err);
@@ -135,6 +137,7 @@ export default function EditProgramScreen() {
         description: '',
         duration_minutes: '',
         person_in_charge: '',
+        notify_enabled: true,
         isNew: true,
       },
     ]);
@@ -155,7 +158,7 @@ export default function EditProgramScreen() {
     }
   };
 
-  const updateItem = (id: string, field: keyof ProgramItemForm, value: string) => {
+  const updateItem = (id: string, field: keyof ProgramItemForm, value: string | boolean) => {
     setItems(items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
@@ -318,6 +321,7 @@ export default function EditProgramScreen() {
             person_in_charge: item.person_in_charge.trim() || null,
             duration_minutes: parseInt(item.duration_minutes),
             order: i,
+            notify_enabled: item.notify_enabled,
           };
           await databaseService.createProgramItem(programItem);
         } else {
@@ -329,6 +333,7 @@ export default function EditProgramScreen() {
             person_in_charge: item.person_in_charge.trim() || null,
             duration_minutes: parseInt(item.duration_minutes),
             order: i,
+            notify_enabled: item.notify_enabled,
           };
           await databaseService.updateProgramItem(item.originalId!, updates);
         }
@@ -449,6 +454,20 @@ export default function EditProgramScreen() {
             keyboardType="number-pad"
             disabled={saving}
           />
+
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabel}>
+              <Text variant="labelLarge">Send notification</Text>
+              <Text variant="bodySmall" style={styles.switchHint}>
+                Notify users 1 minute before this item
+              </Text>
+            </View>
+            <Switch
+              value={item.notify_enabled}
+              onValueChange={(value) => updateItem(item.id, 'notify_enabled', value)}
+              disabled={saving}
+            />
+          </View>
         </View>
       </ScaleDecorator>
     );
@@ -457,8 +476,8 @@ export default function EditProgramScreen() {
   // Filter out deleted items for display
   const visibleItems = items.filter(item => !item.isDeleted);
 
-  // Header Component for form fields - memoized to prevent keyboard dismiss
-  const ListHeader = useCallback(() => (
+  // Header Component for form fields - memoized JSX to prevent keyboard dismiss
+  const listHeaderComponent = useMemo(() => (
     <>
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -654,7 +673,7 @@ export default function EditProgramScreen() {
           }}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          ListHeaderComponent={ListHeader}
+          ListHeaderComponent={listHeaderComponent}
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"

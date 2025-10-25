@@ -111,6 +111,7 @@ export interface Database {
           order: number
           has_task: boolean
           person_in_charge: string | null
+          notify_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -124,6 +125,7 @@ export interface Database {
           order: number
           has_task?: boolean
           person_in_charge?: string | null
+          notify_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -137,6 +139,7 @@ export interface Database {
           order?: number
           has_task?: boolean
           person_in_charge?: string | null
+          notify_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
