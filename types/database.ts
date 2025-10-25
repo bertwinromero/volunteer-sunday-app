@@ -51,7 +51,7 @@ export interface Database {
         Row: {
           id: string
           title: string
-          date: string
+          date: string | null
           start_time: string | null
           end_time: string | null
           status: 'draft' | 'active' | 'completed'
@@ -60,18 +60,15 @@ export interface Database {
           share_token: string
           public_access_enabled: boolean
           active_participants_count: number
-          is_recurring: boolean
-          recurrence_pattern: 'weekly' | 'biweekly' | 'monthly' | null
-          recurrence_end_date: string | null
-          recurrence_day_of_week: number | null
-          parent_program_id: string | null
+          is_template: boolean
+          template_id: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           title: string
-          date: string
+          date?: string | null
           start_time?: string | null
           end_time?: string | null
           status?: 'draft' | 'active' | 'completed'
@@ -80,18 +77,15 @@ export interface Database {
           share_token?: string
           public_access_enabled?: boolean
           active_participants_count?: number
-          is_recurring?: boolean
-          recurrence_pattern?: 'weekly' | 'biweekly' | 'monthly' | null
-          recurrence_end_date?: string | null
-          recurrence_day_of_week?: number | null
-          parent_program_id?: string | null
+          is_template?: boolean
+          template_id?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           title?: string
-          date?: string
+          date?: string | null
           start_time?: string | null
           end_time?: string | null
           status?: 'draft' | 'active' | 'completed'
@@ -100,11 +94,8 @@ export interface Database {
           share_token?: string
           public_access_enabled?: boolean
           active_participants_count?: number
-          is_recurring?: boolean
-          recurrence_pattern?: 'weekly' | 'biweekly' | 'monthly' | null
-          recurrence_end_date?: string | null
-          recurrence_day_of_week?: number | null
-          parent_program_id?: string | null
+          is_template?: boolean
+          template_id?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, Text, HelperText, IconButton, Divider, Switch, Chip, FAB } from 'react-native-paper';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { TextInput, Button, Text, HelperText, IconButton, Switch, FAB } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { databaseService } from '../../../../services/database';
-import { ProgramItemInsert, ProgramItemUpdate, RecurrencePattern, ProgramWithItems, ProgramItem } from '../../../../types';
+import { ProgramItemInsert, ProgramItemUpdate, ProgramWithItems, ProgramItem } from '../../../../types';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -38,11 +38,8 @@ export default function EditProgramScreen() {
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
-  // Recurring program fields
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern>('weekly');
-  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
-  const [showRecurrenceEndDatePicker, setShowRecurrenceEndDatePicker] = useState(false);
+  // Template field
+  const [isTemplate, setIsTemplate] = useState(false);
 
   const [items, setItems] = useState<ProgramItemForm[]>([]);
 
@@ -61,7 +58,9 @@ export default function EditProgramScreen() {
 
       // Set program details
       setTitle(program.title);
-      setDate(new Date(program.date));
+      if (program.date) {
+        setDate(new Date(program.date));
+      }
 
       // Set times if they exist
       if (program.start_time) {
@@ -73,14 +72,8 @@ export default function EditProgramScreen() {
         setEndTime({ hours, minutes });
       }
 
-      // Set recurring fields
-      setIsRecurring(program.is_recurring);
-      if (program.recurrence_pattern) {
-        setRecurrencePattern(program.recurrence_pattern as RecurrencePattern);
-      }
-      if (program.recurrence_end_date) {
-        setRecurrenceEndDate(new Date(program.recurrence_end_date));
-      }
+      // Set template field
+      setIsTemplate(program.is_template);
 
       // Set program items
       const sortedItems = program.program_items.sort((a, b) => a.order - b.order);
@@ -242,7 +235,8 @@ export default function EditProgramScreen() {
       return false;
     }
 
-    if (!date) {
+    // Date is only required if not a template
+    if (!isTemplate && !date) {
       setError('Please select a program date');
       return false;
     }
@@ -290,19 +284,13 @@ export default function EditProgramScreen() {
     setError('');
 
     try {
-      // Get day of week from date (0 = Sunday, 6 = Saturday)
-      const dayOfWeek = date!.getDay();
-
       // Update program
       await databaseService.updateProgram(id, {
         title: title.trim(),
-        date: formatDate(date!),
+        date: date ? formatDate(date) : null,
         start_time: startTime ? formatTime(startTime) : null,
         end_time: endTime ? formatTime(endTime) : null,
-        is_recurring: isRecurring,
-        recurrence_pattern: isRecurring ? recurrencePattern : null,
-        recurrence_end_date: isRecurring && recurrenceEndDate ? formatDate(recurrenceEndDate) : null,
-        recurrence_day_of_week: isRecurring ? dayOfWeek : null,
+        is_template: isTemplate,
       });
 
       // Handle program items changes
@@ -316,12 +304,9 @@ export default function EditProgramScreen() {
         }
       }
 
-      // Sort active items by time
-      const sortedItems = activeItems.sort((a, b) => a.time.localeCompare(b.time));
-
-      // Update existing items and create new ones
-      for (let i = 0; i < sortedItems.length; i++) {
-        const item = sortedItems[i];
+      // Update existing items and create new ones - items are in drag-and-drop order
+      for (let i = 0; i < activeItems.length; i++) {
+        const item = activeItems[i];
 
         if (item.isNew) {
           // Create new item
@@ -349,9 +334,13 @@ export default function EditProgramScreen() {
         }
       }
 
+      const successMessage = isTemplate
+        ? 'Template updated successfully!'
+        : 'Program updated successfully!';
+
       Alert.alert(
         'Success',
-        'Program updated successfully!',
+        successMessage,
         [
           {
             text: 'OK',
@@ -465,45 +454,16 @@ export default function EditProgramScreen() {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>Loading program...</Text>
-      </View>
-    );
-  }
-
   // Filter out deleted items for display
   const visibleItems = items.filter(item => !item.isDeleted);
 
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      {/* Header with Gradient */}
-      <View style={styles.headerGradient}>
-        <View style={styles.header}>
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            iconColor="#FFFFFF"
-            onPress={() => router.back()}
-            style={styles.backButton}
-          />
-          <View>
-            <Text variant="headlineMedium" style={styles.title}>
-              Edit Program
-            </Text>
-            <Text variant="bodyMedium" style={styles.subtitle}>
-              Update program details
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Program Details
-          </Text>
+  // Header Component for form fields - memoized to prevent keyboard dismiss
+  const ListHeader = useCallback(() => (
+    <>
+      <View style={styles.section}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Program Details
+        </Text>
 
         <TextInput
           label="Program Title *"
@@ -580,72 +540,22 @@ export default function EditProgramScreen() {
           </View>
         )}
 
-        {/* Recurring Program Section */}
-        <View style={styles.recurringContainer}>
+        {/* Template Section */}
+        <View style={styles.templateContainer}>
           <View style={styles.switchRow}>
             <View style={styles.switchLabel}>
-              <Text variant="labelLarge">Make this recurring</Text>
+              <Text variant="labelLarge">Save as Template</Text>
               <Text variant="bodySmall" style={styles.switchHint}>
-                Automatically create this program on a schedule
+                Create a reusable template for future programs
               </Text>
             </View>
-            <Switch value={isRecurring} onValueChange={setIsRecurring} />
+            <Switch value={isTemplate} onValueChange={setIsTemplate} />
           </View>
 
-          {isRecurring && (
-            <View style={styles.recurringOptions}>
-              <Text variant="labelLarge" style={styles.dateLabel}>
-                Repeat Pattern
-              </Text>
-              <View style={styles.patternChips}>
-                <Chip
-                  mode={recurrencePattern === 'weekly' ? 'flat' : 'outlined'}
-                  selected={recurrencePattern === 'weekly'}
-                  onPress={() => setRecurrencePattern('weekly')}
-                  style={styles.chip}
-                >
-                  Weekly
-                </Chip>
-                <Chip
-                  mode={recurrencePattern === 'biweekly' ? 'flat' : 'outlined'}
-                  selected={recurrencePattern === 'biweekly'}
-                  onPress={() => setRecurrencePattern('biweekly')}
-                  style={styles.chip}
-                >
-                  Every 2 Weeks
-                </Chip>
-                <Chip
-                  mode={recurrencePattern === 'monthly' ? 'flat' : 'outlined'}
-                  selected={recurrencePattern === 'monthly'}
-                  onPress={() => setRecurrencePattern('monthly')}
-                  style={styles.chip}
-                >
-                  Monthly
-                </Chip>
-              </View>
-
-              <View style={styles.datePickerContainer}>
-                <Text variant="labelLarge" style={styles.dateLabel}>
-                  End Date (Optional)
-                </Text>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowRecurrenceEndDatePicker(true)}
-                  icon="calendar"
-                  style={styles.dateButton}
-                  contentStyle={styles.dateButtonContent}
-                  disabled={saving}
-                >
-                  {recurrenceEndDate ? formatDate(recurrenceEndDate) : 'No End Date'}
-                </Button>
-              </View>
-
-              <HelperText type="info">
-                {recurrencePattern === 'weekly' && 'Program will repeat every week on the same day'}
-                {recurrencePattern === 'biweekly' && 'Program will repeat every 2 weeks on the same day'}
-                {recurrencePattern === 'monthly' && 'Program will repeat monthly on the same day'}
-              </HelperText>
-            </View>
+          {isTemplate && (
+            <HelperText type="info">
+              Templates can be reused when creating new programs. Date is optional for templates.
+            </HelperText>
           )}
         </View>
       </View>
@@ -668,7 +578,73 @@ export default function EditProgramScreen() {
             Add Item
           </Button>
         </View>
+      </View>
+    </>
+  ), [title, date, startTime, endTime, saving, isTemplate]);
 
+  // Footer Component for actions
+  const ListFooter = () => (
+    <View style={styles.content}>
+      {error ? (
+        <HelperText type="error" visible={!!error} style={styles.error}>
+          {error}
+        </HelperText>
+      ) : null}
+
+      <View style={styles.actions}>
+        <Button
+          mode="contained"
+          onPress={handleUpdate}
+          loading={saving}
+          disabled={saving}
+          style={styles.createButton}
+          contentStyle={styles.buttonContent}
+          buttonColor="#6366F1"
+        >
+          Update Program
+        </Button>
+
+        <Button
+          mode="outlined"
+          onPress={() => router.back()}
+          disabled={saving}
+          style={styles.cancelButton}
+          textColor="#6B7280"
+        >
+          Cancel
+        </Button>
+      </View>
+    </View>
+  );
+
+  return (
+    <GestureHandlerRootView style={styles.container}>
+      {/* Header with Gradient */}
+      <View style={styles.headerGradient}>
+        <View style={styles.header}>
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            iconColor="#FFFFFF"
+            onPress={() => router.back()}
+            style={styles.backButton}
+          />
+          <View>
+            <Text variant="headlineMedium" style={styles.title}>
+              Edit Program
+            </Text>
+            <Text variant="bodyMedium" style={styles.subtitle}>
+              Update program details
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex1}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <DraggableFlatList
           data={visibleItems}
           onDragEnd={({ data }) => {
@@ -678,40 +654,12 @@ export default function EditProgramScreen() {
           }}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          containerStyle={styles.draggableList}
+          ListHeaderComponent={ListHeader}
+          ListFooterComponent={ListFooter}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
         />
-      </View>
-
-        {error ? (
-          <HelperText type="error" visible={!!error} style={styles.error}>
-            {error}
-          </HelperText>
-        ) : null}
-
-        <View style={styles.actions}>
-          <Button
-            mode="contained"
-            onPress={handleUpdate}
-            loading={saving}
-            disabled={saving}
-            style={styles.createButton}
-            contentStyle={styles.buttonContent}
-            buttonColor="#6366F1"
-          >
-            Update Program
-          </Button>
-
-          <Button
-            mode="outlined"
-            onPress={() => router.back()}
-            disabled={saving}
-            style={styles.cancelButton}
-            textColor="#6B7280"
-          >
-            Cancel
-          </Button>
-        </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
 
       <DatePickerModal
         locale="en"
@@ -749,18 +697,6 @@ export default function EditProgramScreen() {
         label="Select End Time"
       />
 
-      <DatePickerModal
-        locale="en"
-        mode="single"
-        visible={showRecurrenceEndDatePicker}
-        onDismiss={() => setShowRecurrenceEndDatePicker(false)}
-        date={recurrenceEndDate}
-        onConfirm={(params) => {
-          setShowRecurrenceEndDatePicker(false);
-          setRecurrenceEndDate(params.date);
-        }}
-      />
-
       <TimePickerModal
         visible={showItemTimePicker}
         onDismiss={() => {
@@ -790,6 +726,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  flex1: {
+    flex: 1,
   },
   centerContainer: {
     flex: 1,
@@ -825,9 +764,6 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#E0E7FF',
     fontWeight: '500',
-  },
-  scrollView: {
-    flex: 1,
   },
   content: {
     padding: 16,
@@ -887,9 +823,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   timeField: {
-    flex: 1,
-  },
-  draggableList: {
     flex: 1,
   },
   itemCard: {
@@ -970,7 +903,7 @@ const styles = StyleSheet.create({
     color: '#6366F1',
     fontSize: 18,
   },
-  recurringContainer: {
+  templateContainer: {
     marginTop: 16,
     padding: 16,
     backgroundColor: '#F9FAFB',
@@ -991,22 +924,6 @@ const styles = StyleSheet.create({
   switchHint: {
     marginTop: 4,
     color: '#6B7280',
-  },
-  recurringOptions: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  patternChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    marginRight: 8,
-    marginBottom: 8,
   },
   fab: {
     position: 'absolute',
