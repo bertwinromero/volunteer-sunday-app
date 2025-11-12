@@ -23,6 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.volunteerapp.sunday",
+      "versionCode": 1,
       "permissions": [
         "NOTIFICATIONS",
         "VIBRATE",
