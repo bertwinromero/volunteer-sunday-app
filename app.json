@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Sunday Program Volunteer",
-    "slug": "volunteer-sunday-app",
+    "name": "Mindnistry Volunteers",
+    "slug": "church-volunteer-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.volunteerapp.sunday"
+      "bundleIdentifier": "com.mindnistry.volunteerapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.volunteerapp.sunday",
+      "package": "com.mindnistry.volunteerapp",
       "versionCode": 1,
       "permissions": [
         "NOTIFICATIONS",
@@ -46,6 +46,12 @@
           "sounds": []
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3ffe5161-dde9-4c56-b344-cab1b55fed04"
+      }
+    }
   }
 }
