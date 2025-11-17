@@ -110,7 +110,12 @@ volunteer-sunday-app/
 ├── types/                 # TypeScript type definitions
 ├── hooks/                 # Custom React hooks
 ├── utils/                 # Utility functions
-└── constants/             # App constants
+├── constants/             # App constants
+└── legal-pages/           # Legal documents (Terms, Privacy Policy)
+    ├── index.html         # Homepage
+    ├── terms.html         # Terms of Service
+    ├── privacy.html       # Privacy Policy
+    └── styles.css         # Styling
 
 ```
 
@@ -199,6 +204,39 @@ eas build:configure
 # Build for production
 eas build --platform all
 ```
+
+## Legal Pages
+
+The Terms of Service and Privacy Policy pages are deployed on **Cloudflare Pages** and accessible via the custom domain.
+
+### Live URLs
+
+- **Homepage**: [https://volunteer-app.migokartel.xyz](https://volunteer-app.migokartel.xyz)
+- **Terms of Service**: [https://volunteer-app.migokartel.xyz/terms.html](https://volunteer-app.migokartel.xyz/terms.html)
+- **Privacy Policy**: [https://volunteer-app.migokartel.xyz/privacy.html](https://volunteer-app.migokartel.xyz/privacy.html)
+
+### Local Files
+
+The legal pages are located in the `legal-pages/` directory:
+- `index.html` - Homepage with app information and features
+- `terms.html` - Terms of Service page
+- `privacy.html` - Privacy Policy page
+- `styles.css` - Shared styling for all pages
+
+### Deployment
+
+The legal pages are deployed to Cloudflare Pages. For deployment instructions, see:
+- `DEPLOY_TO_CLOUDFLARE.md` - Detailed step-by-step deployment guide
+- `CLOUDFLARE_QUICK_START.md` - Quick reference checklist
+
+### Updating Legal Pages
+
+1. Edit the HTML files in `legal-pages/`
+2. Commit changes to git
+3. Deploy to Cloudflare Pages (see deployment guides above)
+4. Changes will be live at the URLs above
+
+**Note**: These URLs are used in the Google Play Store listing and should be kept up-to-date.
 
 ## Troubleshooting
 
