@@ -4,8 +4,13 @@ This guide will walk you through publishing your Expo app to the Google Play Sto
 
 ## Prerequisites
 
-✅ You have a Google Developer account (one-time $25 fee)
-✅ Your app is configured with the correct package name: `com.volunteerapp.sunday`
+✅ You have a Google Play Developer account (one-time $25 fee)  
+✅ Your Expo project is configured with the correct package name:
+   - Android package name: `com.mindnistry.volunteerapp`
+   - iOS bundle ID (for reference): `com.mindnistry.volunteerapp`
+✅ You have the Expo CLI and EAS CLI installed:
+   - `npm install -g eas-cli`
+   - Logged in: `eas login`
 
 ## Step 1: Install EAS CLI
 
@@ -60,7 +65,7 @@ eas build --platform android --profile production
 1. Go to [Google Play Console](https://play.google.com/console)
 2. Click **"Create app"**
 3. Fill in the required information:
-   - **App name**: Sunday Program Volunteer
+   - **App name**: Mindnistry Volunteers
    - **Default language**: English (or your preferred language)
    - **App or game**: App
    - **Free or paid**: Free (or Paid, if applicable)
@@ -72,7 +77,7 @@ eas build --platform android --profile production
 ### Required Information:
 
 1. **App details:**
-   - App name: Sunday Program Volunteer
+   - App name: Mindnistry Volunteers
    - Short description (80 characters max)
    - Full description (4000 characters max)
    - App icon (512x512 PNG, no transparency)
@@ -199,4 +204,3 @@ eas build:view
 ```
 
 Good luck with your publication! 🚀
-

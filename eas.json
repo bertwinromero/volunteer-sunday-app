@@ -17,10 +17,6 @@
       }
     },
     "production": {
-      "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": ""
-      },
       "android": {
         "buildType": "app-bundle"
       }
