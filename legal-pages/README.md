@@ -4,7 +4,7 @@ This directory contains the HTML files for the Terms of Service and Privacy Poli
 
 ## Files
 
-- `index.html` - Landing page with links to terms and privacy policy
+- `index.html` - Homepage/landing page for the volunteer app
 - `terms.html` - Terms of Service page
 - `privacy.html` - Privacy Policy page
 - `styles.css` - Styling for all pages
@@ -46,7 +46,9 @@ wrangler pages deploy . --project-name=your-project-name
 
 ## URLs After Deployment
 
-- Main: `https://your-project-name.pages.dev`
-- Terms: `https://your-project-name.pages.dev/terms.html`
-- Privacy: `https://your-project-name.pages.dev/privacy.html`
+- **Homepage**: `https://volunteer-app.migokartel.xyz` or `https://your-project-name.pages.dev`
+- **Terms**: `https://volunteer-app.migokartel.xyz/terms.html`
+- **Privacy**: `https://volunteer-app.migokartel.xyz/privacy.html`
+
+**Note**: The homepage includes links to Terms and Privacy Policy. The Terms and Privacy pages are standalone with no navigation links.
 

@@ -3,32 +3,177 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legal Documents - Mindnistry Volunteers</title>
+  <title>Mindnistry Volunteers - Organize Sunday Programs & Volunteers</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .hero {
+      text-align: center;
+      padding: 60px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin: -40px -40px 40px -40px;
+      border-radius: 8px 8px 0 0;
+    }
+    .hero h1 {
+      color: white;
+      font-size: 3em;
+      margin-bottom: 20px;
+      border: none;
+      padding: 0;
+    }
+    .hero p {
+      font-size: 1.3em;
+      margin-bottom: 30px;
+      opacity: 0.95;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin: 40px 0;
+    }
+    .feature-card {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .feature-card h3 {
+      color: #667eea;
+      margin-top: 0;
+      font-size: 1.3em;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin: 40px 0;
+      flex-wrap: wrap;
+    }
+    .cta-button {
+      padding: 15px 30px;
+      background-color: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: background-color 0.3s;
+      display: inline-block;
+    }
+    .cta-button:hover {
+      background-color: #5568d3;
+      text-decoration: none;
+    }
+    .cta-button.secondary {
+      background-color: #6c757d;
+    }
+    .cta-button.secondary:hover {
+      background-color: #5a6268;
+    }
+    .legal-links {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 30px;
+      border-top: 1px solid #ddd;
+    }
+    .legal-links a {
+      color: #667eea;
+      text-decoration: none;
+      margin: 0 15px;
+    }
+    .legal-links a:hover {
+      text-decoration: underline;
+    }
+    .app-info {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 8px;
+      margin: 30px 0;
+    }
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2em;
+      }
+      .hero p {
+        font-size: 1.1em;
+      }
+      .features {
+        grid-template-columns: 1fr;
+      }
+      .cta-buttons {
+        flex-direction: column;
+      }
+      .cta-button {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Mindnistry Volunteers</h1>
-    <p class="last-updated">Legal Documents</p>
-    
-    <p>Welcome to the legal documents page for Mindnistry Volunteers. Please review our Terms of Service and Privacy Policy to understand your rights and responsibilities when using our application.</p>
-    
-    <div class="nav-links">
-      <a href="terms.html">Terms of Service</a>
-      <a href="privacy.html">Privacy Policy</a>
+    <div class="hero">
+      <h1>Mindnistry Volunteers</h1>
+      <p>Organize volunteers and Sunday programs with simple, clear coordination.</p>
     </div>
-    
-    <hr>
-    
-    <h2>Quick Links</h2>
-    <ul>
-      <li><a href="terms.html">Terms of Service</a> - Learn about the rules and guidelines for using our app</li>
-      <li><a href="privacy.html">Privacy Policy</a> - Understand how we collect, use, and protect your data</li>
-    </ul>
-    
-    <p style="margin-top: 30px; color: #7f8c8d; font-size: 0.9em;">
-      If you have any questions about these documents, please contact us using the information provided in the respective documents.
-    </p>
+
+    <div class="app-info">
+      <h2>About the App</h2>
+      <p>Sunday Program Volunteer helps churches and ministries organize their Sunday services and volunteers with clarity and ease. Designed to be simple, focused, and easy for non-technical users, our app reduces confusion, avoids last-minute scrambling, and ensures every Sunday service is well covered and clearly communicated.</p>
+    </div>
+
+    <h2>Key Features</h2>
+    <div class="features">
+      <div class="feature-card">
+        <h3>📅 Program Management</h3>
+        <p>Create and manage Sunday program schedules in one place. Keep track of all your service items, times, and participants.</p>
+      </div>
+      <div class="feature-card">
+        <h3>👥 Volunteer Assignment</h3>
+        <p>Assign volunteers to roles (worship, tech, ushers, teachers) and track their responsibilities with ease.</p>
+      </div>
+      <div class="feature-card">
+        <h3>📱 Real-Time Updates</h3>
+        <p>Share program details and assignments with your team. Keep everyone updated on changes in real time.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🔔 Notifications</h3>
+        <p>Get notified about upcoming programs, service times, and important updates. Never miss a detail.</p>
+      </div>
+      <div class="feature-card">
+        <h3>✅ Task Tracking</h3>
+        <p>Volunteers can mark tasks as completed. Admins can see the status of all assignments at a glance.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🎯 Simple & Focused</h3>
+        <p>Designed specifically for churches and ministries. No unnecessary features, just what you need.</p>
+      </div>
+    </div>
+
+    <div class="cta-buttons">
+      <a href="https://play.google.com/store/apps/details?id=com.mindnistry.volunteerapp" class="cta-button" target="_blank" rel="noopener noreferrer">
+        Download on Google Play
+      </a>
+      <a href="mailto:niel@migokartel.xyz" class="cta-button secondary">
+        Contact Us
+      </a>
+    </div>
+
+    <div class="legal-links">
+      <p>
+        <a href="terms.html">Terms of Service</a> | 
+        <a href="privacy.html">Privacy Policy</a>
+      </p>
+      <p style="margin-top: 20px; color: #7f8c8d; font-size: 0.9em;">
+        © 2025 Mindnistry Volunteers. All rights reserved.
+      </p>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+      <h3 style="margin-top: 0;">Contact Information</h3>
+      <p><strong>Email:</strong> <a href="mailto:niel@migokartel.xyz">niel@migokartel.xyz</a></p>
+      <p><strong>Address:</strong> JIA CDO, Cinema 1, Lim Ket Kai Mall, Cagayan de Oro City, Misamis Oriental 9000, Philippines</p>
+    </div>
   </div>
 </body>
 </html>
