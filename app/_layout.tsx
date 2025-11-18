@@ -70,12 +70,32 @@ function NavigationProtector() {
       console.log('[NavigationProtector] User in auth group, redirecting based on role:', user.role);
       if (user.role === 'admin') {
         router.replace('/(admin)/dashboard');
+      } else if (user.role === 'volunteer') {
+        router.replace('/(volunteer)/home');
+      } else {
+        // Role is missing or invalid, redirect to index
+        console.warn('[NavigationProtector] User has invalid or missing role:', user.role);
+        router.replace('/');
+      }
+    } else if (user && inAdminGroup) {
+      // Verify user is actually an admin
+      if (user.role !== 'admin') {
+        console.log('[NavigationProtector] Non-admin user in admin group, redirecting');
+        router.replace('/(volunteer)/home');
+      } else {
+        console.log('[NavigationProtector] Admin user in admin group, allowing access');
+      }
+    } else if (user && inVolunteerGroup) {
+      // User is in volunteer area, do nothing
+      console.log('[NavigationProtector] User in volunteer group, allowing access');
+    } else if (user && !inAuthGroup && !inAdminGroup && !inVolunteerGroup && !inGuestGroup && !onIndexPage && !onProgramDeepLink) {
+      // User is authenticated but on an unknown route, redirect based on role
+      console.log('[NavigationProtector] User on unknown route, redirecting based on role:', user.role);
+      if (user.role === 'admin') {
+        router.replace('/(admin)/dashboard');
       } else {
         router.replace('/(volunteer)/home');
       }
-    } else if (user && (inAdminGroup || inVolunteerGroup)) {
-      // User is in correct protected area, do nothing
-      console.log('[NavigationProtector] User in correct protected area');
     } else {
       console.log('[NavigationProtector] Allowing current navigation');
     }

@@ -1,16 +1,21 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Button, Card, Chip } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function VolunteerHome() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
       await signOut();
+      // Explicitly navigate to welcome screen
+      router.replace('/');
     } catch (error) {
       console.error('Error signing out:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
     }
   };
 
